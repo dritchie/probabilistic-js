@@ -374,6 +374,5 @@ module.exports =
 	lookupVariableValue: lookupVariableValue,
 	newTrace: newTrace,
 	factor: factor,
-	condition: condition,
-	getGlobalTrace: function() { return trace }		//Just for debugging; remove soon
+	condition: condition
 }

@@ -122,21 +122,28 @@ util.openModule(trace)
 
 /////////////////////////////////////////////////////
 
-var foo = prob(function foo()
-{
-	var tr = trace.getGlobalTrace()
-	console.log(tr.currentName(0))
-	var bar = prob(function bar()
-	{
-		console.log(tr.currentName(0))
-		var baz = prob(function baz()
-		{
-			console.log(tr.currentName(0))
-		})
-		baz()
-	})
-	bar()
-})
+// var foo = prob(function foo()
+// {
+// 	var tr = trace.getGlobalTrace()
+// 	console.log(tr.currentName(0))
+// 	var bar = prob(function bar()
+// 	{
+// 		console.log(tr.currentName(0))
+// 		var baz = prob(function baz()
+// 		{
+// 			console.log(tr.currentName(0))
+// 		})
+// 		baz()
+// 	})
+// 	bar()
+// })
 
-var tr = trace.newTrace(foo)
-//tr.traceUpdate()
+// var tr = trace.newTrace(foo)
+// //tr.traceUpdate()
+
+
+/////////////////////////////////////////////////////
+
+var erp = require("./probabilistic/erp")
+for (var i = 0; i < 20; i++)
+	console.log(erp.flip())
