@@ -1,3 +1,4 @@
+var util = require("./util")
 
 /*
 Mapping (potentially long) absolute file names to unique integers 
@@ -48,20 +49,13 @@ doesn't expose details about where a function was defined *grumble*)
 */
 function prob(fn)
 {
-	var frame = getStack(0, 1)[0]
+	var frame = getStack(1, 1)[0]
 	var fileName = frame.getFileName()
 	var uniqId = fileNameTable.idForName(fileName)
 	var fnName = ['(', uniqId, frame.pos, ')'].join(':')
 	fn.__probabilistic_lexical_id = fnName
 	return fn
 }
-
-/*
-If a function wasn't wrapped with the above decorator,
-this bit of code will cause us to throw an error when we attempt
-to generate ERPs within that function
-*/
-// TODO: IMPLEMENT THIS!!!!!
 
 
 /*
@@ -78,7 +72,7 @@ function RandomVariableRecord(erp, params, val, logprob, structural, conditioned
 	this.conditioned = conditioned
 }
 
-RandomVariableRecord.prototype.copy = function()
+RandomVariableRecord.prototype.copy = function copy()
 {
 	return new RandomVariableRecord(this.erp, this.params, this.val,
 									this.logprob, this.structural, this.conditioned)
@@ -112,7 +106,7 @@ function RandomExecutionTrace(computation, doRejectionInit)
 	}
 }
 
-RandomExecutionTrace.prototype.deepcopy = function()
+RandomExecutionTrace.prototype.deepcopy = function deepcopy()
 {
 	var newdb = new RandomExecutionTrace(this.computation, false)
 	newdb.logprob = this.logprob
@@ -127,7 +121,7 @@ RandomExecutionTrace.prototype.deepcopy = function()
 	return newdb
 }
 
-RandomExecutionTrace.prototype.freeVarNames = function(structural, nonstructural)
+RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(structural, nonstructural)
 {
 	structural = (structural == undefined ? true : structural)
 	nonstructural = (nonstructural == undefined ? true : nonstructural)
@@ -145,7 +139,7 @@ RandomExecutionTrace.prototype.freeVarNames = function(structural, nonstructural
 /*
 Names of variables that this trace has that the other does not
 */
-RandomExecutionTrace.prototype.varDiff = function(other)
+RandomExecutionTrace.prototype.varDiff = function varDiff(other)
 {
 	var arr = []
 	for (var name in this.vars)
@@ -160,7 +154,7 @@ RandomExecutionTrace.prototype.varDiff = function(other)
 Difference in log probability between this trace and the other
 due to variables that this one has that the other does not
 */
-RandomExecutionTrace.prototype.lpDiff = function(other)
+RandomExecutionTrace.prototype.lpDiff = function lpDiff(other)
 {
 	return this.varDiff(other)
 		.map(function(name) {return this.vars[name].logprob})
@@ -175,7 +169,7 @@ var trace = null
 /*
 Run computation and update this trace accordingly
 */
-RandomExecutionTrace.prototype.traceUpdate = function()
+RandomExecutionTrace.prototype.traceUpdate = prob(function traceUpdate()
 {
 	var origtrace = trace
 	trace = this
@@ -191,7 +185,7 @@ RandomExecutionTrace.prototype.traceUpdate = function()
 		this.vars[name].active = false
 
 	// Mark that this is the 'root' frame of the computation
-	this.rootframe = getStack(0, 1)[0]
+	this.rootframe = getStack(0, 1)[0].fun
 
 	// Run the computation, creating/looking up random variables
 	this.returnValue = this.computation()
@@ -214,9 +208,172 @@ RandomExecutionTrace.prototype.traceUpdate = function()
 
 	// Reset the original singleton trace
 	trace = origtrace
+})
+
+/*
+Propose a random change to a random variable 'varname'
+Returns a new sample trace from the computation and the
+forward and reverse probabilities of this proposal
+*/
+RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname)
+{
+	var nextTrace = this.deepcopy()
+	var v = nextTrace.getRecord(varname)
+	var propval = v.erp.proposal(v.val, v.params)
+	var fwdPropLP = v.erp.logProposalProb(v.val, propval, v.params)
+	var rvsPropLP = v.erp.logProposalProb(propval, v.val, v.params)
+	v.val = propval
+	v.logprob = v.erp.logprob(v.val, v.params)
+	nextTrace.traceUpdate()
+	fwdPropLP += nextTrace.newlogprob
+	rvsPropLP += nextTrace.oldlogprob
+	return nextTrace, fwdPropLP, rvsPropLP
 }
+
+/*
+Return the current structural name, as determined by the interpreter stack
+*/
+RandomExecutionTrace.prototype.currentName = function currentName(numFrameSkip)
+{
+	// Get list of stack frames
+	var frames = getStack(numFrameSkip+1)
+	// Truncate the list at the rootframe
+	var i = 0
+	var n = frames.length
+	var rootid = this.rootframe.__probabilistic_lexical_id
+	var fid = null
+	for (; i < n; i++)
+	{
+		fid = frames[i].fun.__probabilistic_lexical_id
+		if (fid === rootid)
+		{
+			break
+		}
+		if (!fid)
+		{
+			var fnname = frames[i].fun.name || "<anonymous>"
+			throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
+		}
+	}
+	i--
+
+	// Build up name string, checking loop counters along the way
+	// TODO: Is there a faster way than using += repeatedly?
+	var name = ""
+	var loopnum = 0
+	var f = null
+	for (var j = i; j > 0; j--)
+	{
+		f = frames[j]
+		name += f.getFunction().__probabilistic_lexical_id
+		name += ":"
+		name += f.pos
+		loopnum = (this.loopcounters[name] || 0)
+		name += ":"
+		name += loopnum
+		name += "|"
+	}
+	// For the last (topmost) frame, also increment the loop counter
+	f = frames[0]
+	name += f.getFunction().__probabilistic_lexical_id
+	name += ":"
+	name += f.pos
+	loopnum = (this.loopcounters[name] || 0)
+	this.loopcounters[name] += 1
+	name += ":"
+	name += loopnum
+
+	return name
+}
+
+/*
+Looks up the value of a random variable.
+Creates the variable if it does not already exist
+*/
+RandomExecutionTrace.prototype.lookup = function lookup(name, erp, params, isStructural, conditionedValue)
+{
+	var record = this.vars[name]
+	if (!record || record.erp !== erp || record.structural !== isStructural ||
+		(conditionedValue && conditionedValue !== record.val))
+	{
+		// Create a new variable
+		var val = conditionedValue || er.sample_impl(params)
+		var ll = erp.logprob(val, params)
+		this.newlogprob += ll
+		record = new RandomVariableRecord(erp, params, val, ll, isStructural, conditionedValue !== undefined)
+		this.vars[name] = record
+	}
+	else
+	{
+		// Reuse existing variable
+		if (!util.arrayEquals(record.params, params))
+		{
+			record.params = params
+			record.logprob = erp.logprob(record.val, params)
+		}
+	}
+	this.logprob += record.logprob
+	record.active = true
+	return record.val
+}
+
+// Simply retrieve the variable record associated with 'name'
+RandomExecutionTrace.prototype.getRecord = function getRecord(name)
+{
+	return this.vars[name]
+}
+
+// Add a new factor into the log-likelihood of this trace
+RandomExecutionTrace.prototype.addFactor = function addFactor(num)
+{
+	this.logprob += num
+}
+
+// Condition the trace on the value of a boolean expression
+RandomExecutionTrace.prototype.conditionOn = function conditionOn(boolexpr)
+{
+	this.conditionsSatisfied &= boolexpr
+}
+
+
+
+// Exported functions for interacting with the global trace
+
+function lookupVariableValue(erp, params, isStructural, numFrameSkip, conditionedValue)
+{
+	if (!trace)
+		return conditionedValue || erp.sample_impl(params)
+	else
+	{
+		var name = trace.currentName(numFrameSkip+1)
+		return trace.lookup(name, erp, params, isStructural, conditionedValue)
+	}
+}
+
+function newTrace(computation)
+{
+	return new RandomExecutionTrace(computation)
+}
+
+function factor(num)
+{
+	if (trace)
+		trace.addFactor(num)
+}
+
+function condition(boolexpr)
+{
+	if (trace)
+		trace.conditionOn(boolexpr)
+}
+
 
 module.exports =
 {
-	prob: prob
+	prob: prob,
+	lookupVariableValue: lookupVariableValue,
+	newTrace: newTrace,
+	factor: factor,
+	condition: condition,
+	getGlobalTrace: function() { return trace }		//Just for debugging; remove soon
 }
