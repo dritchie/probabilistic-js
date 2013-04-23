@@ -62,11 +62,11 @@ FlipRandomPrimitive.prototype.logProposalProb = function Flip_logProposalProb(cu
 }
 
 var flipInst = new FlipRandomPrimitive()
-function flip(p, isStructural, conditionedValue)
+var flip = trace.prob(function flip(p, isStructural, conditionedValue)
 {
 	p = (p == undefined) ? 0.5 : p
 	return flipInst.sample([p], isStructural, conditionedValue) + 0
-}
+})
 
 
 ///////////////////////////////////////////////////////////////////////////////

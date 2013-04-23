@@ -1,5 +1,9 @@
 var util = require("./util")
 
+// Toggle for switching between different variable naming implementations
+var maintainOwnStack = false
+var nameStack = []
+
 /*
 Mapping (potentially long) absolute file names to unique integers 
 */
@@ -47,14 +51,49 @@ All probabilistic function definitions must be wrapped with this decorator
 so that they can be tagged with a lexically unique name (unfortunately, V8
 doesn't expose details about where a function was defined *grumble*)
 */
-function prob(fn)
+var prob = null
+if (maintainOwnStack)
 {
-	var frame = getStack(1, 1)[0]
-	var fileName = frame.getFileName()
-	var uniqId = fileNameTable.idForName(fileName)
-	var fnName = ['(', uniqId, frame.pos, ')'].join(':')
-	fn.__probabilistic_lexical_id = fnName
-	return fn
+	prob = function prob(fn)
+	{
+		var frame = getStack(1, 1)[0]
+		var fileName = frame.getFileName()
+		var uniqId = fileNameTable.idForName(fileName)
+		var fnName = ['(', uniqId, frame.pos, ')'].join(':')
+		var wrapper = function()
+		{
+			if (trace)
+			{
+				var frame = getStack(1, 1)[0]
+				if (!frame.fun.__probabilistic_lexical_id)
+				{
+					var fnname = frame.fun.name || "<anonymous>"
+					throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
+				}
+				nameStack.push(frame.fun.__probabilistic_lexical_id)
+				nameStack.push(frame.pos)
+				nameStack.push(trace.loopcounters[nameStack.join(':')] || 0)
+				var retval = fn.apply(this, arguments)
+				nameStack.length -= 3
+				return retval
+			}
+			else return fn.apply(this, arguments)
+		}
+		fn.__probabilistic_lexical_id = fnName
+		return wrapper
+	}
+}
+else
+{
+	prob = function prob(fn)
+	{
+		var frame = getStack(1, 1)[0]
+		var fileName = frame.getFileName()
+		var uniqId = fileNameTable.idForName(fileName)
+		var fnName = ['(', uniqId, frame.pos, ')'].join(':')
+		fn.__probabilistic_lexical_id = fnName
+		return fn
+	}
 }
 
 
@@ -233,56 +272,72 @@ RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname)
 /*
 Return the current structural name, as determined by the interpreter stack
 */
-RandomExecutionTrace.prototype.currentName = function currentName(numFrameSkip)
+if (maintainOwnStack)
 {
-	// Get list of stack frames
-	var frames = []
-	var ii = 0
-	var k = numFrameSkip+1
-	var f = getStack(k, 1)[0]
-	var rootid = this.rootframe.__probabilistic_lexical_id
-	while (f && rootid !== f.fun.__probabilistic_lexical_id)
+	RandomExecutionTrace.prototype.currentName = function currentName(numFrameSkip)
 	{
-		if (!f.fun.__probabilistic_lexical_id)
-		{
-			var fnname = f.fun.name || "<anonymous>"
-			throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
-		}
-		frames[ii] = f
-		ii++
-		k++
-		f = getStack(k, 1)[0]
+		var nameMinusLoopCounter = nameStack.slice(0,-1).join(':')
+		var loopnum = this.loopcounters[nameMinusLoopCounter] || 0
+		this.loopcounters[nameMinusLoopCounter] = loopnum + 1
+		var name = nameMinusLoopCounter + ":" + nameStack[nameStack.length-1]
+		return name
 	}
-	var i = frames.length-1
-
-
-	// Build up name string, checking loop counters along the way
-	// TODO: Is there a faster way than using += repeatedly?
-	var name = ""
-	var loopnum = 0
-	var f = null
-	for (var j = i; j > 0; j--)
+}
+else
+{
+	RandomExecutionTrace.prototype.currentName = function currentName(numFrameSkip)
 	{
-		f = frames[j]
+		// Get list of stack frames
+		var frames = []
+		var ii = 0
+		var k = numFrameSkip+1
+		var f = getStack(k, 1)[0]
+		var rootid = this.rootframe.__probabilistic_lexical_id
+		while (f && rootid !== f.fun.__probabilistic_lexical_id)
+		{
+			if (!f.fun.__probabilistic_lexical_id)
+			{
+				var fnname = f.fun.name || "<anonymous>"
+				throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
+			}
+			frames[ii] = f
+			ii++
+			k++
+			f = getStack(k, 1)[0]
+		}
+		var i = frames.length-1
+
+
+		// Build up name string, checking loop counters along the way
+		// TODO: Is there a faster way than using += repeatedly?
+		var name = ""
+		var loopnum = 0
+		var f = null
+		for (var j = i; j > 0; j--)
+		{
+			f = frames[j]
+			name += f.getFunction().__probabilistic_lexical_id
+			name += ":"
+			name += f.pos
+			loopnum = (this.loopcounters[name] || 0)
+			name += ":"
+			name += loopnum
+			name += "|"
+			name += f.pos
+		}
+		// For the last (topmost) frame, also increment the loop counter
+		f = frames[0]
 		name += f.getFunction().__probabilistic_lexical_id
 		name += ":"
 		name += f.pos
 		loopnum = (this.loopcounters[name] || 0)
+		this.loopcounters[name] += 1
 		name += ":"
 		name += loopnum
-		name += "|"
-	}
-	// For the last (topmost) frame, also increment the loop counter
-	f = frames[0]
-	name += f.getFunction().__probabilistic_lexical_id
-	name += ":"
-	name += f.pos
-	loopnum = (this.loopcounters[name] || 0)
-	this.loopcounters[name] += 1
-	name += ":"
-	name += loopnum
+		name += f.pos
 
-	return name
+		return name
+	}
 }
 
 /*
