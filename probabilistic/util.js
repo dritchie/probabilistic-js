@@ -23,7 +23,14 @@ function arrayEquals(a1, a2)
 	return true
 }
 
+function randomChoice(arr)
+{
+	return arr[Math.floor(Math.random()*arr.length)]
+}
+
 module.exports = 
 {
-	openModule: openModule
+	openModule: openModule,
+	arrayEquals: arrayEquals,
+	randomChoice: randomChoice
 }

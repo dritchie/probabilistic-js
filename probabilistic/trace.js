@@ -227,7 +227,7 @@ RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname)
 	nextTrace.traceUpdate()
 	fwdPropLP += nextTrace.newlogprob
 	rvsPropLP += nextTrace.oldlogprob
-	return nextTrace, fwdPropLP, rvsPropLP
+	return [nextTrace, fwdPropLP, rvsPropLP]
 }
 
 /*
@@ -297,7 +297,7 @@ RandomExecutionTrace.prototype.lookup = function lookup(name, erp, params, isStr
 		(conditionedValue && conditionedValue !== record.val))
 	{
 		// Create a new variable
-		var val = conditionedValue || er.sample_impl(params)
+		var val = conditionedValue || erp.sample_impl(params)
 		var ll = erp.logprob(val, params)
 		this.newlogprob += ll
 		record = new RandomVariableRecord(erp, params, val, ll, isStructural, conditionedValue !== undefined)
