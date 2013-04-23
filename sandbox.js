@@ -144,6 +144,14 @@ util.openModule(trace)
 
 /////////////////////////////////////////////////////
 
-var erp = require("./probabilistic/erp")
-for (var i = 0; i < 20; i++)
-	console.log(erp.flip())
+// var erp = require("./probabilistic/erp")
+// for (var i = 0; i < 20; i++)
+// 	console.log(erp.flip())
+
+/////////////////////////////////////////////////////
+
+function foo()
+{
+	console.log(trace.getStack(8, 1)[0])
+}
+foo()

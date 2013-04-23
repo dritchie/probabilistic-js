@@ -60,7 +60,10 @@ test(
 	repeat(runs, function() { return mean(repeat(samples, function() { return flip(0.7) }))}),
 	0.7)
 
+var d1 = new Date()
 mhtest(
 	"flip query",
 	prob(function() { return flip(0.7) }),
 	0.7)
+var d2 = new Date()
+console.log("time: " + (d2.getTime() - d1.getTime()))

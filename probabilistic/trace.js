@@ -236,26 +236,25 @@ Return the current structural name, as determined by the interpreter stack
 RandomExecutionTrace.prototype.currentName = function currentName(numFrameSkip)
 {
 	// Get list of stack frames
-	var frames = getStack(numFrameSkip+1)
-	// Truncate the list at the rootframe
-	var i = 0
-	var n = frames.length
+	var frames = []
+	var ii = 0
+	var k = numFrameSkip+1
+	var f = getStack(k, 1)[0]
 	var rootid = this.rootframe.__probabilistic_lexical_id
-	var fid = null
-	for (; i < n; i++)
+	while (f && rootid !== f.fun.__probabilistic_lexical_id)
 	{
-		fid = frames[i].fun.__probabilistic_lexical_id
-		if (fid === rootid)
+		if (!f.fun.__probabilistic_lexical_id)
 		{
-			break
-		}
-		if (!fid)
-		{
-			var fnname = frames[i].fun.name || "<anonymous>"
+			var fnname = f.fun.name || "<anonymous>"
 			throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
 		}
+		frames[ii] = f
+		ii++
+		k++
+		f = getStack(k, 1)[0]
 	}
-	i--
+	var i = frames.length-1
+
 
 	// Build up name string, checking loop counters along the way
 	// TODO: Is there a faster way than using += repeatedly?
