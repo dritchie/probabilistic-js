@@ -60,7 +60,8 @@ if (maintainOwnStack)
 		var fileName = frame.getFileName()
 		var uniqId = fileNameTable.idForName(fileName)
 		var fnName = ['(', uniqId, frame.pos, ')'].join(':')
-		var wrapper = function()
+		fn.__probabilistic_lexical_id = fnName
+		return function()
 		{
 			if (trace)
 			{
@@ -79,8 +80,6 @@ if (maintainOwnStack)
 			}
 			else return fn.apply(this, arguments)
 		}
-		fn.__probabilistic_lexical_id = fnName
-		return wrapper
 	}
 }
 else
