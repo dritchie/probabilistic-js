@@ -94,13 +94,14 @@ function multinomial_sample(theta)
 
 function multinomial_logprob(n, theta)
 {
-	if (n < 0 || n >= theta.length)
+	var k = theta.length
+	if (n < 0 || n >= k)
 		return -Infinity
 	n = Math.round(n)
 	var thetasum = 0
 	for (var i = 0; i < k; i++)
 		thetasum += theta[i]
-	return math.log(theta[n]/thetasum)
+	return Math.log(theta[n]/thetasum)
 }
 
 MultinomialRandomPrimitive.prototype.sample_impl = function Multinomial_sample_impl(params)
@@ -145,7 +146,7 @@ var uniformDraw = trace.prob(function uniformDraw(items, isStructural)
 	var probs = []
 	for (var i = 0; i < items.length; i++)
 		probs[i] = 1/items.length
-	return multinomialDraw(items, probs, isStructural)
+	return items[multinomial(probs, isStructural)]
 })
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -170,7 +171,7 @@ UniformRandomPrimitive.prototype.logprob = function Uniform_logprob(val, params)
 var uniformInst = new UniformRandomPrimitive()
 var uniform = trace.prob(function uniform(lo, hi, isStructural, conditionedValue)
 {
-	return uniformInst.sample([lo, hi], isStructural, conditionedValue)
+	return uniformInst.sample([lo, hi], isStructural, conditionedValue) + 0
 })
 
 
@@ -186,8 +187,8 @@ function gaussian_sample(mu,sigma)
 
     do
     {
-        u = 1 - random();
-        v = 1.7156 * (random() - .5);
+        u = 1 - Math.random();
+        v = 1.7156 * (Math.random() - .5);
         x = u - 0.449871;
         y = Math.abs(v) + 0.386595;
         q = x*x + y*(0.196*y - 0.25472*x);
@@ -197,7 +198,7 @@ function gaussian_sample(mu,sigma)
     return mu + sigma*v/u;
 }
 
-function gaussian_logprob(mu, sigma)
+function gaussian_logprob(x, mu, sigma)
 {
 	return -.5*(1.8378770664093453 + 2*Math.log(sigma) + (x - mu)*(x - mu)/(sigma*sigma))
 }
@@ -227,7 +228,7 @@ GaussianRandomPrimitive.prototype.logProposalProb = function Gaussian_logProposa
 var gaussianInst = new GaussianRandomPrimitive()
 var gaussian = trace.prob(function gaussian(mu, sigma, isStructural, conditionedValue)
 {
-	return gaussianInst.sample([mu, sigma], isStructural, conditionedValue)
+	return gaussianInst.sample([mu, sigma], isStructural, conditionedValue) + 0
 })
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -246,10 +247,10 @@ function gamma_sample(a,b)
 
     while(true)
     {
-        do{x = sample_gaussian(0,1);  v = 1+c*x;} while(v <= 0);
+        do{x = gaussian_sample(0,1);  v = 1+c*x;} while(v <= 0);
 
         v=v*v*v;
-        u=random();
+        u=Math.random();
 
         if((u < 1 - .331*x*x*x*x) || (Math.log(u) < .5*x*x + d*(1 - v + Math.log(v)))) return b*d*v;
     }
@@ -283,7 +284,7 @@ GammaRandomPrimtive.prototype.logprob = function Gamma_logprob(val, params)
 var gammaInst = new GammaRandomPrimtive()
 var gamma = trace.prob(function gamma(a, b, isStructural, conditionedValue)
 {
-	return gammaInst.sample([a, b], isStructural, conditionedValue)
+	return gammaInst.sample([a, b], isStructural, conditionedValue) + 0
 })
 
 
@@ -295,8 +296,8 @@ BetaRandomPrimitive.prototype = Object.create(RandomPrimitive.prototype)
 
 function beta_sample(a, b)
 {
-    var x = sample_gamma(a, 1);
-    return x / (x + sample_gamma(b, 1));
+    var x = gamma_sample(a, 1);
+    return x / (x + gamma_sample(b, 1));
 }
 
 function log_beta(a, b)
@@ -324,7 +325,7 @@ BetaRandomPrimitive.prototype.logprob = function Beta_logprob(val, params)
 var betaInst = new BetaRandomPrimitive()
 var beta = trace.prob(function beta(a, b, isStructural, conditionedValue)
 {
-	return betaInst.sample([a, b], isStructural, conditionedValue)
+	return betaInst.sample([a, b], isStructural, conditionedValue) + 0
 })
 
 
@@ -345,7 +346,7 @@ function binomial_sample(p,n)
         a = 1 + n/2;
         b = 1 + n-a;
 
-        var x = sample_beta(a,b);
+        var x = beta_sample(a,b);
 
         if(x >= p){ n = a-1; p /= x; }
         else{ k += a; n = b - 1; p = (p-x) / (1-x); }
@@ -354,7 +355,7 @@ function binomial_sample(p,n)
     var u;
     for(i=0; i<n; i++)
     {
-        u = random();
+        u = Math.random();
         if(u<p) k++;
     }
 
@@ -363,50 +364,30 @@ function binomial_sample(p,n)
 
 function g(x)
 {
-    var  switchlev = 0.1;
-    var z;
-
-    if (x == 0)  return 1;
-    if (x == 1)  return 0;
-
-    var d = 1 - x;
-
-    if (Math.abs(d) > switchlev) return (1 - (x * x) + (2 * x * Math.log(x))) / (d * d);
-
-    z = d / 3;
-    var di = d;
-
-    for (var i = 2; i <= 7; i++)
-    {
-        di *= d;
-        z += (2 * di) / ((i+1) * (i+2));
-    }
-    return z;
+	if (x == 0) return 1
+	if (x == 1) return 0
+	var d = 1 - x
+	return (1 - (x * x) + (2 * x * Math.log(x))) / (d * d)
 }
 
-function binomial_logprob(k, p, n)
+function binomial_logprob(s, p, n)
 {
-    var inv2 = 1/2, inv3 = 1/3, inv6 = 1/6;
-
-    if (k >= n) return 1;
-
-    var q = 1 - p;
-    var s = k + inv2;
-    var t = n - k - inv2;
-    var d1 = s + inv6 - (n + inv3) * p;
-    var d2 = q /(s+inv2) - p/(t+inv2) + (q-inv2)/(n+1);
-
-    d2 = d1 + 0.02 * d2;
-
-    var num = 1 + q * g(s/(n*p)) + p * g(t/(n*q));
-    var den = (n + inv6) * p * q;
-    var z = num / den;
-
-    var invsd = Math.sqrt(z);
-    z = d2 * invsd;
-    z = gaussian_logprob(z, 0, 1) + Math.log(invsd);
-
-    return z;
+	var inv2 = 1/2
+	var inv3 = 1/3
+	var inv6 = 1/6
+	if (s >= n) return -Infinity
+	var q = 1-p
+	var S = s + inv2
+	var T = n - s - inv2
+	var d1 = s + inv6 - (n + inv3) * p
+	var d2 = q/(s+inv2) - p/(T+inv2) + (q-inv2)/(n+1)
+	var d2 = d1 + 0.02*d2
+	var num = 1 + q * g(S/(n*p)) + p * g(T/(n*q))
+	var den = (n + inv6) * p * q
+	var z = num / den
+	var invsd = Math.sqrt(z)
+	z = d2 * invsd
+	return gaussian_logprob(z, 0, 1) + Math.log(invsd) 
 }
 
 BinomialRandomPrimitive.prototype.sample_impl = function Binomial_sample_impl(params)
@@ -422,7 +403,7 @@ BinomialRandomPrimitive.prototype.logprob = function Binomial_logprob(val, param
 var binomialInst = new BinomialRandomPrimitive()
 var binomial = trace.prob(function binomial(p, n, isStructural, conditionedValue)
 {
-	return binomialInst.sample([p,n], isStructural, conditionedValue)
+	return binomialInst.sample([p,n], isStructural, conditionedValue) + 0
 })
 
 
@@ -447,7 +428,7 @@ function poisson_sample(mu)
 
     var emu = Math.exp(-mu);
     var p = 1;
-    do{ p *= random(); k++; } while(p > emu);
+    do{ p *= Math.random(); k++; } while(p > emu);
 
     return k-1;
 }
@@ -497,7 +478,7 @@ PoissonRandomPrimitive.prototype.logprob = function Poisson_logprob(val, params)
 var poissonInst = new PoissonRandomPrimitive()
 var poisson = trace.prob(function poisson(mu, isStructural, conditionedValue)
 {
-	return poissonInst.sample([mu], isStructural, conditionedValue)
+	return poissonInst.sample([mu], isStructural, conditionedValue) + 0
 })
 
 
@@ -549,7 +530,7 @@ DirichletRandomPrimitive.prototype.logprob = function Dirichlet_logprob(val, par
 var dirichletInst = new DirichletRandomPrimitive()
 var dirichlet = trace.prob(function dirichlet(alpha, isStructural, conditionedValue)
 {
-	return dirichletInst.sample(alpha, isStructural, conditionedValue)
+	return dirichletInst.sample(alpha, isStructural, conditionedValue).concat([])
 })
 
 
@@ -563,6 +544,7 @@ module.exports =
 	multinomial: multinomial,
 	multinomialDraw: multinomialDraw,
 	uniformDraw: uniformDraw,
+	uniform: uniform,
 	gaussian_logprob: gaussian_logprob,
 	gaussian: gaussian,
 	gamma_logprob: gamma_logprob,

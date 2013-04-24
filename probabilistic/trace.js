@@ -1,7 +1,7 @@
 var util = require("./util")
 
 // Toggle for switching between different variable naming implementations
-var maintainOwnStack = false
+var maintainOwnStack = true
 var nameStack = []
 
 /*
@@ -32,7 +32,9 @@ function getStack(numToSkip, numToGet)
 
 	var top = arguments.callee
 	for (var i = 0; i < numToSkip; i++)
+	{
 		top = top.caller
+	}
 
 	var orig = Error.prepareStackTrace
 	Error.prepareStackTrace = function(_, stack){ return stack }
@@ -71,12 +73,16 @@ if (maintainOwnStack)
 					var fnname = frame.fun.name || "<anonymous>"
 					throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
 				}
-				nameStack.push(frame.fun.__probabilistic_lexical_id)
-				nameStack.push(frame.pos)
-				nameStack.push(trace.loopcounters[nameStack.join(':')] || 0)
-				var retval = fn.apply(this, arguments)
-				nameStack.length -= 3
-				return retval
+				if (frame.fun != trace.rootframe)
+				{
+					nameStack.push(frame.fun.__probabilistic_lexical_id)
+					nameStack.push(frame.pos)
+					nameStack.push(trace.loopcounters[nameStack.join(':')] || 0)
+					var retval = fn.apply(this, arguments)
+					nameStack.length -= 3
+					return retval
+				}
+				else return fn.apply(this, arguments)
 			}
 			else return fn.apply(this, arguments)
 		}
@@ -290,7 +296,8 @@ else
 		var frames = []
 		var ii = 0
 		var k = numFrameSkip+1
-		var f = getStack(k, 1)[0]
+		//var f = getStack(k, 1)[0]		// This has problems...
+		var f = getStack(0, k+1)[k]	
 		var rootid = this.rootframe.__probabilistic_lexical_id
 		while (f && rootid !== f.fun.__probabilistic_lexical_id)
 		{
@@ -305,36 +312,34 @@ else
 			f = getStack(k, 1)[0]
 		}
 		var i = frames.length-1
-
+		if (frames.length == 0) throw new Error("No stack frames available! JIT weirdness?")
 
 		// Build up name string, checking loop counters along the way
-		// TODO: Is there a faster way than using += repeatedly?
 		var name = ""
 		var loopnum = 0
 		var f = null
 		for (var j = i; j > 0; j--)
 		{
 			f = frames[j]
-			name += f.getFunction().__probabilistic_lexical_id
+			name += f.fun.__probabilistic_lexical_id
 			name += ":"
 			name += f.pos
 			loopnum = (this.loopcounters[name] || 0)
 			name += ":"
 			name += loopnum
 			name += "|"
-			name += f.pos
 		}
 		// For the last (topmost) frame, also increment the loop counter
 		f = frames[0]
-		name += f.getFunction().__probabilistic_lexical_id
+		name += f.fun.__probabilistic_lexical_id
 		name += ":"
 		name += f.pos
 		loopnum = (this.loopcounters[name] || 0)
 		this.loopcounters[name] += 1
 		name += ":"
 		name += loopnum
-		name += f.pos
 
+		//console.log(name)
 		return name
 	}
 }
