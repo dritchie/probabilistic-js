@@ -26,7 +26,11 @@ function mhtest(name, computation, trueExpectation, tolerance)
 	test(name, repeat(runs, function() { return expectation(computation, traceMH, samples, lag) }), trueExpectation, tolerance)
 }
 
-// function larjtest...
+function larjtest(name, computation, trueExpectation, tolerance)
+{
+	tolerance = (tolerance === undefined ? errorTolerance : tolerance)
+	test(name, repeat(runs, function() { return expectation(computation, LARJMH, samples, 10, undefined, lag) }), trueExpectation, tolerance)
+}
 
 function eqtest(name, estvalues, truevalues, tolerance)
 {
@@ -391,6 +395,17 @@ mhtest(
 
 mhtest(
 	"trans-dimensional",
+	prob(function()
+	{
+		var a = flip(0.9, true) ? beta(1, 5) : 0.7
+		var b = flip(a)
+		condition(b)
+		return a
+	}),
+	0.417)
+
+larjtest(
+	"trans-dimensional (LARJ)",
 	prob(function()
 	{
 		var a = flip(0.9, true) ? beta(1, 5) : 0.7

@@ -204,8 +204,8 @@ due to variables that this one has that the other does not
 RandomExecutionTrace.prototype.lpDiff = function lpDiff(other)
 {
 	return this.varDiff(other)
-		.map(function(name) {return this.vars[name].logprob})
-		.reduce(function(a,b) {return a+b})
+		.map(function(name) {return this.vars[name].logprob}.bind(this))
+		.reduce(function(a,b) {return a+b}, 0)
 }
 
 /*

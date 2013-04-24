@@ -28,9 +28,22 @@ function randomChoice(arr)
 	return arr[Math.floor(Math.random()*arr.length)]
 }
 
+function keys(obj)
+{
+	var a = []
+	var i = 0
+	for (var prop in obj)
+	{
+		a[i] = prop
+		i++
+	}
+	return a
+}
+
 module.exports = 
 {
 	openModule: openModule,
 	arrayEquals: arrayEquals,
-	randomChoice: randomChoice
+	randomChoice: randomChoice,
+	keys: keys
 }
