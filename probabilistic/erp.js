@@ -77,8 +77,8 @@ MultinomialRandomPrimitive.prototype = Object.create(RandomPrimitive.prototype)
 
 function multinomial_sample(theta)
 {
-	var k = theta.length
 	var result = 0
+	var k = theta.length
 	var thetasum = 0
 	for (var i = 0; i < k; i++)
 		thetasum += theta[i]
@@ -96,7 +96,9 @@ function multinomial_logprob(n, theta)
 {
 	var k = theta.length
 	if (n < 0 || n >= k)
+	{
 		return -Infinity
+	}
 	n = Math.round(n)
 	var thetasum = 0
 	for (var i = 0; i < k; i++)
@@ -117,7 +119,7 @@ MultinomialRandomPrimitive.prototype.logprob = function Multinomial_logprob(val,
 // Multinomial with currval projected out
 MultinomialRandomPrimitive.prototype.proposal = function Multinomial_proposal(currval, params)
 {
-	var newparams = Array.prototype.slice(params)
+	var newparams = params.slice()
 	newparams[currval] = 0
 	return multinomial_sample(newparams)
 }
@@ -125,7 +127,7 @@ MultinomialRandomPrimitive.prototype.proposal = function Multinomial_proposal(cu
 // Multinomial with currval projected out
 MultinomialRandomPrimitive.prototype.logProposalProb = function Multinomial_logProposalProb(currval, propval, params)
 {
-	var newparams = Array.prototype.slice(params)
+	var newparams = params.slice()
 	newparams[currval] = 0
 	return multinomial_logprob(propval, newparams)
 }

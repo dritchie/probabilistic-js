@@ -1,6 +1,6 @@
 var util = require("./util")
 util.openModule(util)
-var pr = require("./init")
+var pr = require("./index")
 util.openModule(pr)
 
 var samples = 150
@@ -189,6 +189,137 @@ eqtest(
 		poisson_logprob(7, 4)
 	],
 	[-1.9205584583201643, -1.8560199371825927, -2.821100833226181])
+
+
+/*
+Tests adapted from Church
+*/
+
+mhtest(
+	"setting a flip",
+	prob(function()
+	{
+		var a = 1/1000
+		condition(flip(a))
+		return a
+	}),
+	1/1000,
+	0.000000000000001)
+
+mhtest(
+	"and conditioned on or",
+	prob(function()
+	{
+		var a = flip()
+		var b = flip()
+		condition(a || b)
+		return (a && b)
+	}),
+	1/3)
+
+mhtest(
+	"and conditioned on or, biased flip",
+	prob(function()
+	{
+		var a = flip(0.3)
+		var b = flip(0.3)
+		condition(a || b)
+		return (a && b)
+	}),
+	(0.3*0.3) / (0.3*0.3 + 0.7*0.3 + 0.3*0.7))
+
+mhtest(
+	"contitioned flip",
+	prob(function()
+	{
+		var bitflip = prob(function (fidelity, x)
+		{
+			return flip(x ? fidelity : 1-fidelity)
+		})
+		var hyp = flip(0.7)
+		condition(bitflip(0.8, hyp))
+		return hyp
+	}),
+	(0.7*0.8) / (0.7*0.8 + 0.3*0.2))
+
+mhtest(
+	"random 'if' with random branches, unconditioned",
+	prob(function()
+	{
+		if (flip(0.7))
+			return flip(0.2)
+		else
+			return flip(0.8)
+	}),
+	0.7*0.2 + 0.3*0.8)
+
+mhtest(
+	"flip with random weight, unconditioned",
+	prob(function()
+	{
+		return flip(flip(0.7) ? 0.2 : 0.8)
+	}),
+	0.7*0.2 + 0.3*0.8)
+
+mhtest(
+	"random procedure application, unconditioned",
+	prob(function()
+	{
+		var proc = prob(flip(0.7) ?
+			function (x) { return flip(0.2) } :
+			function (x) { return flip(0.8) })
+		return proc(1)
+	}),
+	0.7*0.2 + 0.3*0.8)
+
+mhtest(
+	"conditioned multinomial",
+	prob(function()
+	{
+		var hyp = multinomialDraw(['b', 'c', 'd'], [0.1, 0.6, 0.3])
+		var observe = prob(function (x)
+		{
+			if (flip(0.8))
+				return x
+			else
+				return 'b'
+		})
+		condition(observe(hyp) == 'b')
+		return (hyp == 'b')
+	}),
+	0.357)
+
+mhtest(
+	"recursive stochastic fn, unconditioned (tail recursive)",
+	prob(function()
+	{
+		var powerLaw = prob(function (prob, x)
+		{
+			if (flip(prob, true))
+				return x
+			else
+				return powerLaw(prob, x+1)
+		})
+		var a = powerLaw(0.3, 1)
+		return a < 5
+	}),
+	0.7599)
+
+mhtest(
+	"recursive stochastic fn, unconditioned",
+	prob(function()
+	{
+		var powerLaw = prob(function (prob, x)
+		{
+			if (flip(prob, true))
+				return x
+			else
+				return 0 + powerLaw(prob, x+1)
+		})
+		var a = powerLaw(0.3, 1)
+		return a < 5
+	}),
+	0.7599)
 
 
 console.log("tests done!")

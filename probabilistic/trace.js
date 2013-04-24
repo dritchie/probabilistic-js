@@ -240,6 +240,7 @@ RandomExecutionTrace.prototype.traceUpdate = prob(function traceUpdate()
 
 	// Clear out any random values that are no longer reachable
 	var newvars = {}
+	this.oldlogprob = 0.0
 	for (var name in this.vars)
 	{
 		var rec = this.vars[name]
@@ -297,7 +298,7 @@ else
 		var ii = 0
 		var k = numFrameSkip+1
 		//var f = getStack(k, 1)[0]		// This has problems...
-		var f = getStack(0, k+1)[k]	
+		var f = getStack(1, k)[k-1]	
 		var rootid = this.rootframe.__probabilistic_lexical_id
 		while (f && rootid !== f.fun.__probabilistic_lexical_id)
 		{
