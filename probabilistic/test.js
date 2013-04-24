@@ -321,6 +321,128 @@ mhtest(
 	}),
 	0.7599)
 
+mhtest(
+	"memoized flip, unconditioned",
+	prob(function()
+	{
+		var proc = mem(prob(function (x) { return flip(0.8) }))
+		return proc(1) && proc(2) && proc(1) && proc(2)
+	}),
+	0.64)
+
+mhtest(
+	"memoized flip, conditioned",
+	prob(function()
+	{
+		var proc = mem(prob(function (x) { return flip(0.2) }))
+		condition(proc(1) || proc(2) || proc(2) || proc(2))
+		return proc(1)
+	}),
+	0.5555555555555555)
+
+mhtest(
+	"bound symbol used inside memoizer, unconditioned",
+	prob(function()
+	{
+		var a = flip(0.8)
+		var proc = mem(prob(function (x) { return a }))
+		return proc(1) && proc(1)
+	}),
+	0.8)
+
+mhtest(
+	"memoized flip with random argument, unconditioned",
+	prob(function()
+	{
+		var proc = mem(prob(function (x) { return flip(0.8) }))
+		return proc(uniformDraw([1,2,3])) && proc(uniformDraw([1,2,3]))
+	}),
+	0.6933333333333334)
+
+mhtest(
+	"memoized random procedure, unconditioned",
+	prob(function()
+	{
+		var proc = flip(0.7) ?
+					prob(function (x) { return flip(0.2)}) :
+					prob(function (x) { return flip(0.8)})
+		var memproc = mem(proc)
+		return memproc(1) && memproc(2)
+	}),
+	0.22)
+
+mhtest(
+	"mh-query over rejection query for conditioned flip",
+	prob(function()
+	{
+		var bitflip = prob(function (fidelity, x)
+		{
+			return flip(x ? fidelity : 1-fidelity)
+		})
+		var innerQuery = prob(function()
+		{
+			var a = flip(0.7)
+			condition(bitflip(0.8, a))
+			return a
+		})
+		return rejectionSample(innerQuery)
+	}),
+	0.903225806451613)
+
+mhtest(
+	"trans-dimensional",
+	prob(function()
+	{
+		var a = flip(0.9, true) ? beta(1, 5) : 0.7
+		var b = flip(a)
+		condition(b)
+		return a
+	}),
+	0.417)
+
+mhtest(
+	"memoized flip in if branch (create/destroy memprocs), unconditioned",
+	prob(function()
+	{
+		var a = flip() ? mem(flip) : mem(flip)
+		var b = a()
+		return b
+	}),
+	0.5)
+
+
+/*
+Tests for things specific to new implementation
+*/
+
+
+mhtest(
+	"native loop",
+	prob(function()
+	{
+		var accum = 0
+		for (var i = 0; i < 4; i++)
+			accum += flip()
+		return accum/4
+	}),
+	0.5)
+
+mhtest(
+	"directly conditioning variable values",
+	prob(function()
+	{
+		var accum = 0
+		for (var i = 0; i < 10; i++)
+		{
+			if (i < 5)
+				accum += flip(0.5, false, 1)
+			else
+				accum += flip(0.5)
+		}
+		return accum / 10
+	}),
+	0.75)
+
 
 console.log("tests done!")
 

@@ -65,7 +65,9 @@ if (maintainOwnStack)
 		fn.__probabilistic_lexical_id = fnName
 		return function()
 		{
-			if (trace)
+			// If there is no active trace, or if this is the root call (the call to traceUpdate),
+			// then there's no need to track names (the second case only happens with nested query)
+			if (trace && fn != trace.rootframe)
 			{
 				var frame = getStack(1, 1)[0]
 				if (!frame.fun.__probabilistic_lexical_id)
@@ -73,6 +75,7 @@ if (maintainOwnStack)
 					var fnname = frame.fun.name || "<anonymous>"
 					throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
 				}
+				// Including the root frame makes names unnecessarily long, so skip it
 				if (frame.fun != trace.rootframe)
 				{
 					nameStack.push(frame.fun.__probabilistic_lexical_id)

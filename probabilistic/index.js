@@ -23,6 +23,6 @@ for (var prop in control)
 for (var prop in inference)
 	module.exports[prop] = inference[prop]
 
-// FOrward memoize exports
+// Forward memoize exports
 for (var prop in memoize)
 	module.exports[prop] = memoize[prop]
