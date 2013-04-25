@@ -462,4 +462,4 @@ mhtest(
 console.log("tests done!")
 
 var d2 = new Date()
-console.log("time: " + (d2.getTime() - d1.getTime()))
+console.log("time: " + (d2.getTime() - d1.getTime()) / 1000)
