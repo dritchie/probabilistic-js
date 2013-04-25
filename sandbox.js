@@ -1,6 +1,6 @@
-var trace = require('./probabilistic/trace')
-var util = require('./probabilistic/util')
-util.openModule(trace)
+// var trace = require('./probabilistic/trace')
+// var util = require('./probabilistic/util')
+// util.openModule(trace)
 
 // function foo()
 // {
@@ -150,8 +150,21 @@ util.openModule(trace)
 
 /////////////////////////////////////////////////////
 
-function foo()
+// function foo()
+// {
+// 	console.log(trace.getStack(8, 1)[0])
+// }
+// foo()
+
+/////////////////////////////////////////////////////
+
+var pr = null
+try
 {
-	console.log(trace.getStack(8, 1)[0])
+	pr = require("probabilistic")
+} catch (e)
+{
+	pr = require("./probabilistic")
 }
-foo()
+
+console.log(pr)

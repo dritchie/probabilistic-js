@@ -54,8 +54,18 @@ var probWrapper =
 				type: estraverse.Syntax.CallExpression,
 				callee:
 				{
-					type: estraverse.Syntax.Identifier,
-					name: "prob"	// Qualify, include appropriate require
+					type: estraverse.Syntax.MemberExpression,
+					computed: false,
+					object:
+					{
+						type: estraverse.Syntax.Identifier,
+						name: "__pr"
+					},
+					property:
+					{
+						type: estraverse.Syntax.Identifier,
+						name: "prob"
+					}
 				},
 				arguments: [node]
 			}
@@ -73,7 +83,9 @@ function probTransform(codeString)
 	var ast = esprima.parse(codeString)
 	estraverse.replace(ast, fnDeclDesugarer)
 	estraverse.replace(ast, probWrapper)
-	return escodegen.generate(ast)
+	var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic')\n} catch (e) {\n\t__pr = require('./probabilistic')\n}\n"
+	//console.log(preamble)
+	return preamble + escodegen.generate(ast)
 }
 
 
