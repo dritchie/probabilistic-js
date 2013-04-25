@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Probabilistic Javascript in the Browser!</title>
+    <link rel="stylesheet" href="codemirror/codemirror.css">
+    <script src="codemirror/codemirror.js"></script>
+    <script src="codemirror/matchbrackets.js"></script>
+    <script src="codemirror/continuecomment.js"></script>
+    <script src="codemirror/javascript.js"></script>
+    <script src="probabilistic.js"></script>
+    <link rel="stylesheet" href="codemirror/docs.css">
+    <style type="text/css">.CodeMirror {border-top: 1px solid black; border-bottom: 1px solid black;}</style>
+  </head>
+  <body>
+    <h1>Probabilistic Javascript in the Browser!</h1>
+
+<div><textarea id="code" name="code">
+
+var hist =
+  distrib(
+      function()
+      {
+          var a = flip()
+          var b = flip()
+          condition(a || b)
+          return (a && b)
+      },
+      traceMH,
+      1000)
+
+console.log(hist)
+
+</textarea></div>
+
+    <script>
+      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        lineNumbers: true,
+        matchBrackets: true,
+        continueComments: "Enter"
+      });
+    </script>
+
+    <script>
+      var pr = require("./probabilistic/index")
+      var util = require("./probabilistic/util")
+      var transform = require("./probabilistic/transform")
+      util.openModule(pr)
+
+      function runCode()
+      {
+        var codestring = editor.getValue()
+        codestring = transform.probTransform(codestring)
+        eval(codestring)
+      }
+    </script>
+
+    <button style="margin-top: 10px; font-size: 14pt" onclick="runCode()">
+      Run
+    </button>
+
+  </body>
+</html>
