@@ -26,3 +26,10 @@ for (var prop in inference)
 // Forward memoize exports
 for (var prop in memoize)
 	module.exports[prop] = memoize[prop]
+
+/*
+Since source transformation induces dependencies on esprima and escodegen,
+and since not everyone will need/want to use it, the index does not forward
+the exports from transport. Include transport directly if you want those
+features (or call transport from the command line to transfom files directly)
+*/
