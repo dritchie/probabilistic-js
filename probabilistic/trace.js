@@ -1,6 +1,11 @@
 var util = require("./util")
 
 // Toggle for switching between different variable naming implementations
+// NOTE: The 'false' implementation has an issue with recursion (see the 
+// 	'geStack' implementation below). This is fixable by always returning
+// 	the full stack trace, but that will make this implementation extremely
+// 	slow (it is already slower than the 'true' implementation). So, let's
+//	just consider the 'false' implementation deprecated or some such.
 var maintainOwnStack = true
 var nameStack = []
 
@@ -33,7 +38,7 @@ function getStack(numToSkip, numToGet)
 	var top = arguments.callee
 	for (var i = 0; i < numToSkip; i++)
 	{
-		top = top.caller
+		top = top.caller	// NOTE: This will not work with recursion!!!
 	}
 
 	var orig = Error.prepareStackTrace
@@ -301,7 +306,7 @@ else
 		var ii = 0
 		var k = numFrameSkip+1
 		//var f = getStack(k, 1)[0]		// This has problems...
-		var f = getStack(1, k)[k-1]	
+		var f = getStack(1, k)[k-1]
 		var rootid = this.rootframe.__probabilistic_lexical_id
 		while (f && rootid !== f.fun.__probabilistic_lexical_id)
 		{
@@ -404,7 +409,9 @@ RandomExecutionTrace.prototype.conditionOn = function conditionOn(boolexpr)
 function lookupVariableValue(erp, params, isStructural, numFrameSkip, conditionedValue)
 {
 	if (!trace)
+	{
 		return conditionedValue || erp.sample_impl(params)
+	}
 	else
 	{
 		var name = trace.currentName(numFrameSkip+1)

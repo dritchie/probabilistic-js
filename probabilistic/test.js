@@ -297,12 +297,12 @@ mhtest(
 	"recursive stochastic fn, unconditioned (tail recursive)",
 	prob(function()
 	{
-		var powerLaw = prob(function (prob, x)
+		var powerLaw = prob(function (p, x)
 		{
-			if (flip(prob, true))
+			if (flip(p, true))
 				return x
 			else
-				return powerLaw(prob, x+1)
+				return powerLaw(p, x+1)
 		})
 		var a = powerLaw(0.3, 1)
 		return a < 5
@@ -313,12 +313,12 @@ mhtest(
 	"recursive stochastic fn, unconditioned",
 	prob(function()
 	{
-		var powerLaw = prob(function (prob, x)
+		var powerLaw = prob(function (p, x)
 		{
-			if (flip(prob, true))
+			if (flip(p, true))
 				return x
 			else
-				return 0 + powerLaw(prob, x+1)
+				return 0 + powerLaw(p, x+1)
 		})
 		var a = powerLaw(0.3, 1)
 		return a < 5
