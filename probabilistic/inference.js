@@ -304,20 +304,20 @@ LARJKernel.prototype.stats = function LARJKernel_stats()
 	if (this.diffusionProposalsMade > 0)
 	{
 		console.log("Diffusion acceptance ratio: " + (this.diffusionProposalsAccepted/this.diffusionProposalsMade) +
-			" (" + this.diffusionProposalsAccepted + "/" + this.diffusionProposalsMade = ")")
+			" (" + this.diffusionProposalsAccepted + "/" + this.diffusionProposalsMade + ")")
 	}
 	if (this.jumpProposalsMade > 0)
 	{
 		console.log("Jump acceptance ratio: " + (this.jumpProposalsAccepted/this.jumpProposalsMade) +
-			" (" + this.jumpProposalsAccepted + "/" + this.jumpProposalsMade = ")")
+			" (" + this.jumpProposalsAccepted + "/" + this.jumpProposalsMade + ")")
 	}
 	if (this.annealingProposalsMade > 0)
 	{
 		console.log("Annealing acceptance ratio: " + (this.annealingProposalsAccepted/this.annealingProposalsMade) +
-			" (" + this.annealingProposalsAccepted + "/" + this.annealingProposalsMade = ")")
+			" (" + this.annealingProposalsAccepted + "/" + this.annealingProposalsMade + ")")
 	}
 	console.log("Overall acceptance ratio: " + (overallProposalsAccepted/overallProposalsMade) +
-		" (" + overallProposalsAccepted + "/" + overallProposalsMade = ")")
+		" (" + overallProposalsAccepted + "/" + overallProposalsMade + ")")
 }
 
 
