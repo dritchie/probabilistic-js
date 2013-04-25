@@ -29,7 +29,7 @@ var hist =
       traceMH,
       1000)
 
-console.log(hist)
+output(hist)
 
 </textarea></div>
 
@@ -39,25 +39,65 @@ console.log(hist)
         matchBrackets: true,
         continueComments: "Enter"
       });
-    </script>
+      var outmirror = null
 
-    <script>
       var pr = require("./probabilistic/index")
       var util = require("./probabilistic/util")
       var transform = require("./probabilistic/transform")
       util.openModule(pr)
 
-      function runCode()
+      function __updateOutput(str)
+      {
+        if (!outmirror)
+        {
+          outmirror = CodeMirror(document.getElementById("output"))
+          outmirror.readonly = true
+        }
+        outmirror.setValue(str)
+        document.getElementById("clearBtn").style.display = "inline"
+      }
+
+      function __clearOutput()
+      {
+        var outelem = document.getElementById("output")
+        outelem.removeChild(outelem.childNodes[0])
+        outmirror = null
+        document.getElementById("clearBtn").style.display = "none"
+      }
+
+      function output(obj)
+      {
+        var text = JSON.stringify(obj, null, '\t')
+        __updateOutput(text)
+      }
+
+      function __runCode()
       {
         var codestring = editor.getValue()
-        codestring = transform.probTransform(codestring)
-        eval(codestring)
+        try
+        {
+          codestring = transform.probTransform(codestring)
+          eval(codestring)
+        }
+        catch (e)
+        {
+          __updateOutput(JSON.stringify(e.message))
+        }
       }
     </script>
 
-    <button style="margin-top: 10px; font-size: 14pt" onclick="runCode()">
+    <button style="margin-top: 10px; font-size: 14pt" onclick="__runCode()">
       Run
     </button>
+
+    <div>
+      <br/>
+    <h3>Output:</h3>
+    <div id="output"></div>
+    <button id="clearBtn" style="margin-top: 10px; font-size: 14pt; display: none" onclick="__clearOutput()">
+      Clear
+    </button>
+    </div>
 
   </body>
 </html>
