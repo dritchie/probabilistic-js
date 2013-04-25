@@ -84,7 +84,6 @@ function probTransform(codeString)
 	estraverse.replace(ast, fnDeclDesugarer)
 	estraverse.replace(ast, probWrapper)
 	var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic')\n} catch (e) {\n\t__pr = require('./probabilistic')\n}\n"
-	//console.log(preamble)
 	return preamble + escodegen.generate(ast)
 }
 
