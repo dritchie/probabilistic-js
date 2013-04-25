@@ -8,5 +8,5 @@ V8's CallSite API (which I used for tracking execution traces) unfortunately doe
 Programs written in probabilistic-js can also be run in the browser via [Browserify](https://github.com/substack/node-browserify). The `webppl` directory contains the framework for a simple example (using the excellent [CodeMirror](http://codemirror.net/) widget). You'll need to browserify the `probabilistic` and `probabilistic/transform` modules to get it working:
 
 	browserify -r ./probabilistic/index -r ./probabilistic/transform > webppl/probabilistic.js
-	
-where `browserify` refers to `browserify/bin/cmd.js`. A running instance of this web demo can be found [here](https://github.com/substack/node-browserify).
+
+where `browserify` refers to `browserify/bin/cmd.js`. A running instance of this web demo can be found [here](http://graphics.stanford.edu/~dritchie/webppl).
