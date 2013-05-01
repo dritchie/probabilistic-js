@@ -23,7 +23,8 @@ function test(name, estimates, trueExpectation, tolerance)
 function mhtest(name, computation, trueExpectation, tolerance)
 {
 	tolerance = (tolerance === undefined ? errorTolerance : tolerance)
-	test(name, repeat(runs, function() { return expectation(computation, traceMH, samples, lag) }), trueExpectation, tolerance)
+	//test(name, repeat(runs, function() { return expectation(computation, traceMH, samples, lag) }), trueExpectation, tolerance)
+	test(name, repeat(runs, function() { return expectation(computation, LARJMH, samples, 0, undefined, lag) }), trueExpectation, tolerance)
 }
 
 function larjtest(name, computation, trueExpectation, tolerance)
@@ -330,7 +331,11 @@ mhtest(
 	prob(function()
 	{
 		var proc = mem(prob(function (x) { return flip(0.8) }))
-		return proc(1) && proc(2) && proc(1) && proc(2)
+		var p11 = proc(1)
+		var p21 = proc(2)
+		var p12 = proc(1)
+		var p22 = proc(2)
+		return p11 && p21 && p12 && p22
 	}),
 	0.64)
 
@@ -339,7 +344,11 @@ mhtest(
 	prob(function()
 	{
 		var proc = mem(prob(function (x) { return flip(0.2) }))
-		condition(proc(1) || proc(2) || proc(2) || proc(2))
+		var p11 = proc(1)
+		var p21 = proc(2)
+		var p22 = proc(2)
+		var p23 = proc(2)
+		condition(p11 || p21 || p22 || p23)
 		return proc(1)
 	}),
 	0.5555555555555555)
@@ -350,7 +359,9 @@ mhtest(
 	{
 		var a = flip(0.8)
 		var proc = mem(prob(function (x) { return a }))
-		return proc(1) && proc(1)
+		var p11 = proc(1)
+		var p12 = proc(1)
+		return p11 && p12
 	}),
 	0.8)
 
@@ -359,7 +370,9 @@ mhtest(
 	prob(function()
 	{
 		var proc = mem(prob(function (x) { return flip(0.8) }))
-		return proc(uniformDraw([1,2,3])) && proc(uniformDraw([1,2,3]))
+		var p1 = proc(uniformDraw([1,2,3]))
+		var p2 = proc(uniformDraw([1,2,3]))
+		return p1 && p2
 	}),
 	0.6933333333333334)
 
@@ -371,7 +384,9 @@ mhtest(
 					prob(function (x) { return flip(0.2)}) :
 					prob(function (x) { return flip(0.8)})
 		var memproc = mem(proc)
-		return memproc(1) && memproc(2)
+		var mp1 = memproc(1)
+		var mp2 = memproc(2)
+		return mp1 && mp2
 	}),
 	0.22)
 

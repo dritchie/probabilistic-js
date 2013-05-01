@@ -100,7 +100,7 @@ RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 	*/
 	if (!name)
 	{
-		currTrace.traceUpdate()
+		currTrace.traceUpdate(!this.structural)
 		return currTrace
 	}
 	/*
@@ -109,7 +109,7 @@ RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 	*/
 	else
 	{
-		var retval = currTrace.proposeChange(name)
+		var retval = currTrace.proposeChange(name, !this.structural)
 		var nextTrace = retval[0]; var fwdPropLP = retval[1]; var rvsPropLP = retval[2]
 		fwdPropLP -= Math.log(currTrace.freeVarNames(this.structural, this.nonstructural).length)
 		rvsPropLP -= Math.log(nextTrace.freeVarNames(this.structural, this.nonstructural).length)
@@ -171,8 +171,9 @@ LARJInterpolationTrace.prototype.freeVarNames = function LARJInterpTrace_freeVar
 	return util.keys(set)
 }
 
-LARJInterpolationTrace.prototype.proposeChange = function LARJInterpTrace_proposeChange(varname)
+LARJInterpolationTrace.prototype.proposeChange = function LARJInterpTrace_proposeChange(varname, structureIsFixed)
 {
+	if (!structureIsFixed) throw new Error("Structure must be fixed for LARJ annealing proposals!")
 	var v1 = this.trace1.getRecord(varname)
 	var v2 = this.trace2.getRecord(varname)
 	var nextTrace = new LARJInterpolationTrace(v1 ? this.trace1.deepcopy() : this.trace1,
@@ -189,13 +190,13 @@ LARJInterpolationTrace.prototype.proposeChange = function LARJInterpTrace_propos
 	{
 		v1.val = propval
 		v1.logprob = v1.erp.logprob(v1.val, v1.params)
-		nextTrace.trace1.traceUpdate()
+		nextTrace.trace1.traceUpdate(structureIsFixed)
 	}
 	if (v2)
 	{
 		v2.val = propval
 		v2.logprob = v2.erp.logprob(v2.val, v2.params)
-		nextTrace.trace2.traceUpdate()
+		nextTrace.trace2.traceUpdate(structureIsFixed)
 	}
 	return [nextTrace, fwdPropLP, rvsPropLP]
 }
