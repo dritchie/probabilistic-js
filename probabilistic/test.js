@@ -370,8 +370,8 @@ mhtest(
 	prob(function()
 	{
 		var proc = mem(prob(function (x) { return flip(0.8) }))
-		var p1 = proc(uniformDraw([1,2,3]))
-		var p2 = proc(uniformDraw([1,2,3]))
+		var p1 = proc(uniformDraw([1,2,3], true))
+		var p2 = proc(uniformDraw([1,2,3], true))
 		return p1 && p2
 	}),
 	0.6933333333333334)
