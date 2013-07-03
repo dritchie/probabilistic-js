@@ -21,7 +21,8 @@ MarginalRandomPrimitive.prototype.getDist = function getDist(args) {
     var stringedargs = JSON.stringify(args) //stringify to use as key. needed?
     
     if(!(stringedargs in this.cache)) {
-        console.log("Making marginal for args " + stringedargs)
+        
+        //console.log("Generating marginal for args " +stringedargs)
         
         var dist = {}
         var fn = this.fn
@@ -38,11 +39,9 @@ MarginalRandomPrimitive.prototype.getDist = function getDist(args) {
         {
             dist[v].prob /= samps.length
         }
-        
-        //console.log(" Marginal is " + JSON.stringify(hist))
-        
+                
         this.cache[stringedargs] = dist
-    }
+    } //else console.log("Re-using marginal for args " +stringedargs)
     return this.cache[stringedargs]
 }
 
@@ -77,8 +76,7 @@ marginalize = function marginalize(fn)
     
     return trace.prob(function marginal(arg)
                       {
-                      //should cast arguments to Array?
-                      //might want ability to make it conditioned or structural...
+                      //TODO: might want ability to make it conditioned or structural...
                       return marginalInt.sample(arguments)
                       })
 }
