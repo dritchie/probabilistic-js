@@ -19,7 +19,10 @@ RandomPrimitive.prototype.logprob = function ERP_logprob(val, params)
 RandomPrimitive.prototype.sample = function ERP_sample(params, isStructural, conditionedValue)
 {
 	// The '+ 0' is there in case V8 ever implements tail call optimization
-	return trace.lookupVariableValue(this, params, isStructural, 2, conditionedValue) + 0
+	//return trace.lookupVariableValue(this, params, isStructural, 2, conditionedValue) + 0
+    //however, doing +0 screws up return value for any non-number domains...
+    return trace.lookupVariableValue(this, params, isStructural, 2, conditionedValue)
+
 }
 
 RandomPrimitive.prototype.proposal = function ERP_proposal(currval, params)
@@ -541,6 +544,7 @@ var dirichlet = trace.prob(function dirichlet(alpha, isStructural, conditionedVa
 
 module.exports = 
 {
+    RandomPrimitive: RandomPrimitive,
 	flip: flip,
 	multinomial_logprob: multinomial_logprob,
 	multinomial: multinomial,

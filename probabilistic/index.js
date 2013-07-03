@@ -3,7 +3,7 @@ var erp = require("./erp")
 var control = require("./control")
 var inference = require("./inference")
 var memoize = require("./memoize")
-
+var marginalize = require("./marginalize")
 
 module.exports = {}
 
@@ -26,6 +26,10 @@ for (var prop in inference)
 // Forward memoize exports
 for (var prop in memoize)
 	module.exports[prop] = memoize[prop]
+
+// Forward marginalize exports
+for (var prop in marginalize)
+    module.exports[prop] = marginalize[prop]
 
 /*
 Since source transformation induces dependencies on esprima and escodegen,
