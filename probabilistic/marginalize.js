@@ -7,13 +7,17 @@ var erp = require("./erp")
 var inference = require("./inference")
 var trace = require("./trace")
 
-function MarginalRandomPrimitive(fn) {
+function MarginalRandomPrimitive(fn, samplingFn, samplingFnArgs) {
     this.fn = fn
+    this.samplingFn = samplingFn
+    this.samplingFnArgs = samplingFnArgs
     this.cache = {}
 }
 
 //why create an object to assign the primitive? instead of just assigning the primitive?
 MarginalRandomPrimitive.prototype = Object.create(erp.RandomPrimitive.prototype)
+
+MarginalRandomPrimitive.prototype.clearCache = function clearCache() { this.cache = {} }
 
 //this is going to work ok, because traceUpdate is written properly to that it sets asside current trace state and reinstates it when done, hence nesting will do the right thing...
 MarginalRandomPrimitive.prototype.getDist = function getDist(args) {
@@ -27,8 +31,9 @@ MarginalRandomPrimitive.prototype.getDist = function getDist(args) {
         var dist = {}
         var fn = this.fn
         var computation = trace.prob( function computation(){return fn.apply(this, args)} )
+        var samps = this.samplingFn.apply(this, [computation].concat(this.samplingFnArgs))
+        //var samps = inference.traceMH(computation, 100, 1) //TODO: which inference fn..? may want rejection or enumeration sometimes.
         
-        var samps = inference.traceMH(computation, 100, 1) //TODO: which inference fn..? may want rejection or enumeration sometimes.
         for(i in samps)
         {
             var v = samps[i].sample
@@ -70,17 +75,46 @@ MarginalRandomPrimitive.prototype.logprob = function Marginal_logprob(val, param
 
 //assume fn is a function to be marginalized..
 //returns an ERP that computes and caches marginals of the original function.
-marginalize = function marginalize(fn)
+//computes marginal by using samplingFn and variadic args are args to the sampling function.
+marginalize = function marginalize(fn, samplingFn)
 {
-    var marginalInt = new MarginalRandomPrimitive(fn)
+    var samplingFnArgs = Array.prototype.slice.apply(arguments).slice(2)
     
-    return trace.prob(function marginal(arg)
-                      {
-                      //TODO: might want ability to make it conditioned or structural...
-                      return marginalInt.sample(arguments)
-                      })
+    if(samplingFn == undefined){samplingFn = inference.traceMH; samplingFnArgs = [100, 1]}
+    
+    var marginalInt = new MarginalRandomPrimitive(fn, samplingFn, samplingFnArgs)
+    
+    var marginal = trace.prob(function marginal()//variadic..
+                              {
+                              var args = Array.prototype.slice.apply(arguments)
+                              return marginalInt.sample(args)
+                              })
+    
+    marginal.clearCache = marginalInt.clearCache
+    
+    return marginal
 }
 
+//same as above, but generates an ERP that expects a final conditioned value argument. can't be left off because this HoF needs to handle functions with unknown number of arguments.
+marginalizeConditioned = function marginalizeConditioned(fn, samplingFn)
+{
+    var samplingFnArgs = Array.prototype.slice.apply(arguments).slice(2)
+    
+    if(samplingFn == undefined){samplingFn = inference.traceMH; samplingFnArgs = [100, 1]}
+    
+    var marginalInt = new MarginalRandomPrimitive(fn, samplingFn, samplingFnArgs)
+    
+    var marginal = trace.prob(function marginal()//variadic..
+                              {
+                                var args = Array.prototype.slice.apply(arguments)
+                                var conditionedValue = args.pop()
+                                return marginalInt.sample(args,undefined,conditionedValue)
+                              })
+    
+    marginal.clearCache = marginalInt.clearCache
+    
+    return marginal
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
