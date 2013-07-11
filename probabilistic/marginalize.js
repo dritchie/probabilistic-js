@@ -90,28 +90,21 @@ marginalize = function marginalize(fn, samplingFn)
                               return marginalInt.sample(args)
                               })
     
-    marginal.clearCache = marginalInt.clearCache
-    
-    return marginal
-}
-
-//same as above, but generates an ERP that expects a final conditioned value argument. can't be left off because this HoF needs to handle functions with unknown number of arguments.
-marginalizeConditioned = function marginalizeConditioned(fn, samplingFn)
-{
-    var samplingFnArgs = Array.prototype.slice.apply(arguments).slice(2)
-    
-    if(samplingFn == undefined){samplingFn = inference.traceMH; samplingFnArgs = [100, 1]}
-    
-    var marginalInt = new MarginalRandomPrimitive(fn, samplingFn, samplingFnArgs)
-    
-    var marginal = trace.prob(function marginal()//variadic..
-                              {
-                                var args = Array.prototype.slice.apply(arguments)
-                                var conditionedValue = args.pop()
-                                return marginalInt.sample(args,undefined,conditionedValue)
-                              })
+    //this lets you set a conditioned value for the marginal ERP, even though it's variadic:
+    marginal.conditionTo = trace.prob(function conditionTo(conditionedValue){
+                                      return trace.prob(function(){
+                                                 var args = Array.prototype.slice.apply(arguments)
+                                                 return marginalInt.sample(args,undefined,conditionedValue)
+                                                 })
+                                      })
     
     marginal.clearCache = marginalInt.clearCache
+    
+    marginal.logprob = trace.prob(function logprob(){ //variadic
+                                  var args = Array.prototype.slice.apply(arguments)
+                                  var val = args.pop()
+                                  return marginalInt.logprob(val,args)
+                                  })
     
     return marginal
 }
