@@ -75,15 +75,15 @@ if (maintainOwnStack)
 			if (trace && fn != trace.rootframe)
 			{
 				var frame = getStack(1, 1)[0]
-				if (!frame.fun.__probabilistic_lexical_id)
+				if (!frame.getFunction().__probabilistic_lexical_id)
 				{
-					var fnname = frame.fun.name || "<anonymous>"
+					var fnname = frame.getFunction().name || "<anonymous>"
 					throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
 				}
 				// Including the root frame makes names unnecessarily long, so skip it
-				if (frame.fun != trace.rootframe)
+				if (frame.getFunction() != trace.rootframe)
 				{
-					nameStack.push(frame.fun.__probabilistic_lexical_id)
+					nameStack.push(frame.getFunction().__probabilistic_lexical_id)
 					nameStack.push(frame.pos)
 					nameStack.push(trace.loopcounters[nameStack.join(':')] || 0)
 					var retval = fn.apply(this, arguments)
@@ -250,7 +250,7 @@ RandomExecutionTrace.prototype.traceUpdate = prob(function traceUpdate(structure
 		this.vars[name].active = false
 
 	// Mark that this is the 'root' frame of the computation
-	this.rootframe = getStack(0, 1)[0].fun
+	this.rootframe = getStack(0, 1)[0].getFunction()
 
 	// Run the computation, creating/looking up random variables
 	this.returnValue = this.computation()
@@ -321,11 +321,11 @@ else
 		//var f = getStack(k, 1)[0]		// This has problems...
 		var f = getStack(1, k)[k-1]
 		var rootid = this.rootframe.__probabilistic_lexical_id
-		while (f && rootid !== f.fun.__probabilistic_lexical_id)
+		while (f && rootid !== f.getFunction().__probabilistic_lexical_id)
 		{
-			if (!f.fun.__probabilistic_lexical_id)
+			if (!f.getFunction().__probabilistic_lexical_id)
 			{
-				var fnname = f.fun.name || "<anonymous>"
+				var fnname = f.getFunctionName() || "<anonymous>"
 				throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
 			}
 			frames[ii] = f
@@ -343,7 +343,7 @@ else
 		for (var j = i; j > 0; j--)
 		{
 			f = frames[j]
-			name += f.fun.__probabilistic_lexical_id
+			name += f.getFunction().__probabilistic_lexical_id
 			name += ":"
 			name += f.pos
 			loopnum = (this.loopcounters[name] || 0)
@@ -353,7 +353,7 @@ else
 		}
 		// For the last (topmost) frame, also increment the loop counter
 		f = frames[0]
-		name += f.fun.__probabilistic_lexical_id
+		name += f.getFunction().__probabilistic_lexical_id
 		name += ":"
 		name += f.pos
 		loopnum = (this.loopcounters[name] || 0)
