@@ -65,12 +65,27 @@ function MAP(computation, samplingFn)
 
 /*
 Rejection sample a result from computation that satisfies all
-conditioning expressions
+conditioning expressions.
+Note: doesn't work when there are conditionedValue ERPs
 */
 function rejectionSample(computation)
 {
 	var tr = trace.newTrace(computation)
 	return tr.returnValue
+}
+
+//same but return a bunch of samples in data structure that matches traceMH
+function bunchaRejectionSample(computation, numsamps)
+{
+    var samps = []
+    
+    for(i=0;i<numsamps;i++)
+    {
+        var tr = trace.newTrace(computation)
+        samps.push({sample: tr.returnValue, logprob: tr.logprob})
+    }
+	
+	return samps
 }
 
 
@@ -375,6 +390,7 @@ module.exports =
 	expectation: expectation,
 	MAP: MAP,
 	rejectionSample: rejectionSample,
+    bunchaRejectionSample: bunchaRejectionSample,
 	traceMH: traceMH,
 	LARJMH: LARJMH
 }
