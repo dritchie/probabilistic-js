@@ -261,8 +261,8 @@ LARJKernel.prototype.jumpStep = function LARJKernel_jumpStep(currTrace)
 	v.val = propval
 	v.logprob = v.erp.logprob(v.val, v.params)
 	newStructTrace.traceUpdate()
-	var oldNumVars = oldStructTrace.freeVarNames(true, true).length
-	var newNumVars = newStructTrace.freeVarNames(true, true).length
+	var oldNumVars = oldStructTrace.freeVarNames(true, false).length
+	var newNumVars = newStructTrace.freeVarNames(true, false).length
 	fwdPropLP += newStructTrace.newlogprob - Math.log(oldNumVars)
 
 	// We only actually do annealing if we have any non-structural variables and we're
