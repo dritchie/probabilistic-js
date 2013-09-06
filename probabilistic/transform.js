@@ -15,8 +15,6 @@ var fnDeclDesugarer =
 		if (node.type == estraverse.Syntax.FunctionDeclaration)
 		{
 			node.type = estraverse.Syntax.FunctionExpression
-			// This recursion shouldn't be necessary..
-			estraverse.replace(node, fnDeclDesugarer)
 			var replNode = 
 			{
 				type: estraverse.Syntax.VariableDeclaration,
@@ -45,10 +43,10 @@ var probWrapper =
 {
 	enter: function(node)
 	{
-		if (node.type == estraverse.Syntax.FunctionExpression)
+		if (node.type == estraverse.Syntax.FunctionExpression &&
+			!node.processed)
 		{
-			// This recursion shouldn't be necessary...
-			estraverse.replace(node.body, probWrapper)
+			node.processed = true
 			var wrapNode = 
 			{
 				type: estraverse.Syntax.CallExpression,
