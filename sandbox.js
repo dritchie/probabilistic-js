@@ -158,13 +158,93 @@
 
 /////////////////////////////////////////////////////
 
-var pr = null
-try
-{
-	pr = require("probabilistic")
-} catch (e)
-{
-	pr = require("./probabilistic")
-}
+// var pr = null
+// try
+// {
+// 	pr = require("probabilistic")
+// } catch (e)
+// {
+// 	pr = require("./probabilistic")
+// }
 
-console.log(pr)
+// console.log(pr)
+
+/////////////////////////////////////////////////////
+
+// var esprima = require("esprima")
+// var code = "(function() { return 5; })()"
+// // var code = "foo()"
+// var ast = esprima.parse(code)
+// console.log(ast.body[0].expression)
+
+/////////////////////////////////////////////////////
+
+// // Add a string format method
+// if (!String.prototype.format) {
+//   String.prototype.format = function() {
+//     var args = arguments;
+//     return this.replace(/{(\d+)}/g, function(match, number) { 
+//       return typeof args[number] != 'undefined'
+//         ? args[number]
+//         : match
+//       ;
+//     });
+//   };
+// }
+
+// var esprima = require("esprima")
+// var estraverse = require("escodegen/node_modules/estraverse")
+// var escodegen = require("escodegen")
+
+// var code = "var y = foo(1.0, 42); var z = bar(2.0, 99);"
+// var replcode = "(function() {s.push({0}); var x = __p_REPLACEME_p__; s.pop(); return x; })()"
+
+// function makeWrappedCallReplacer(callNode)
+// {
+// 	var replacer = 
+// 	{
+// 		enter: function(node)
+// 		{
+// 			if (node.type == estraverse.Syntax.Identifier &&
+// 				node.name == "__p_REPLACEME_p__")
+// 			{
+// 				return callNode
+// 			}
+// 			return node
+// 		}
+// 	}
+// 	return replacer
+// }
+
+// var nextid = 0
+// var callWrapper = 
+// {
+// 	enter: function(node)
+// 	{
+// 		if (node.skip) return estraverse.VisitorOption.Skip;
+// 		if (node.type == estraverse.Syntax.CallExpression)
+// 		{
+// 			var replacer = makeWrappedCallReplacer(node)
+// 			var wrapast = esprima.parse(replcode.format(nextid)).body[0].expression
+// 			nextid++
+// 			wrapast.callee.skip = true
+// 			estraverse.replace(wrapast, replacer)
+// 			return wrapast
+// 		}
+// 		return node
+// 	}
+// }
+
+// var ast = esprima.parse(code)
+// estraverse.replace(ast, callWrapper)
+// console.log(escodegen.generate(ast))
+
+/////////////////////////////////////////////////////
+
+console.log("hi")
+
+
+
+
+
+
