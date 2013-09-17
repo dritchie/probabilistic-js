@@ -13,7 +13,7 @@
     "dependencies": {
         "esprima": "~1.0.4",
         "escodegen": "~0.0.26",
-        "browserify": "~2.29.1",
+        "browserify": "~2.29.1"
     },
     "author" : {
         "name" : "Daniel Ritchie",
