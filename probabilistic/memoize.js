@@ -6,7 +6,7 @@ Wrapper around a function to memoize its results
 function mem(fn)
 {
 	var cache = {}
-	return trace.prob(function()
+	return function()
 	{
 		var str = JSON.stringify(arguments)
 		var val = cache[str]
@@ -16,7 +16,7 @@ function mem(fn)
 			cache[str] = val
 		}
 		return val
-	})
+	}
 }
 
 module.exports = 

@@ -1,113 +1,11 @@
 var util = require("./util")
 
-// Toggle for switching between different variable naming implementations
-// NOTE: The 'false' implementation has an issue with recursion (see the 
-// 	'geStack' implementation below). This is fixable by always returning
-// 	the full stack trace, but that will make this implementation extremely
-// 	slow (it is already slower than the 'true' implementation). So, let's
-//	just consider the 'false' implementation deprecated or some such.
-var maintainOwnStack = true
-var nameStack = []
-
 /*
-Mapping (potentially long) absolute file names to unique integers 
+Callsite name management
 */
-var fileNameTable =
-{
-	currId: 0,
-	table: {},
-	idForName: function(name)
-	{
-		var id = this.table[name]
-		if (id == undefined) { id = this.currId++; this.table[name] = id }
-		return id;
-	}
-}
-
-/*
-Code adapated from https://github.com/visionmedia/callsite/blob/master/index.js
-*/
-function getStack(numToSkip, numToGet)
-{
-	numToSkip = numToSkip || 0
-	numToGet = numToGet || Infinity
-
-	var origLimit = Error.stackTraceLimit
-	Error.stackTraceLimit = numToGet
-
-	var top = arguments.callee
-	for (var i = 0; i < numToSkip; i++)
-	{
-		top = top.caller	// NOTE: This will not work with recursion!!!
-	}
-
-	var orig = Error.prepareStackTrace
-	Error.prepareStackTrace = function(_, stack){ return stack }
-	var err = new Error
-	Error.captureStackTrace(err, top)
-	var stack = err.stack
-
-	Error.prepareStackTrace = orig
-	Error.stackTraceLimit = origLimit
-
-	return stack;
-}
-
-/*
-All probabilistic function definitions must be wrapped with this decorator
-so that they can be tagged with a lexically unique name (unfortunately, V8
-doesn't expose details about where a function was defined *grumble*)
-*/
-var prob = null
-if (maintainOwnStack)
-{
-	prob = function prob(fn)
-	{
-		var frame = getStack(1, 1)[0]
-		var fileName = frame.getFileName()
-		var uniqId = fileNameTable.idForName(fileName)
-		var fnName = ['(', uniqId, frame.pos, ')'].join(':')
-		fn.__probabilistic_lexical_id = fnName
-		return function()
-		{
-			// If there is no active trace, or if this is the root call (the call to traceUpdate),
-			// then there's no need to track names (the second case only happens with nested query)
-			if (trace && fn != trace.rootframe)
-			{
-				var frame = getStack(1, 1)[0]
-				if (!frame.getFunction().__probabilistic_lexical_id)
-				{
-					var fnname = frame.getFunction().name || "<anonymous>"
-					throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
-				}
-				// Including the root frame makes names unnecessarily long, so skip it
-				if (frame.getFunction() != trace.rootframe)
-				{
-					nameStack.push(frame.getFunction().__probabilistic_lexical_id)
-					nameStack.push(frame.pos)
-					nameStack.push(trace.loopcounters[nameStack.join(':')] || 0)
-					var retval = fn.apply(this, arguments)
-					nameStack.length -= 3
-					return retval
-				}
-				else return fn.apply(this, arguments)
-			}
-			else return fn.apply(this, arguments)
-		}
-	}
-}
-else
-{
-	prob = function prob(fn)
-	{
-		var frame = getStack(1, 1)[0]
-		var fileName = frame.getFileName()
-		var uniqId = fileNameTable.idForName(fileName)
-		var fnName = ['(', uniqId, frame.pos, ')'].join(':')
-		fn.__probabilistic_lexical_id = fnName
-		return fn
-	}
-}
+var idstack = []
+function enterfn(id) { idstack.push(id) }
+function leavefn(id) { idstack.pop() }
 
 
 /*
@@ -228,7 +126,7 @@ var trace = null
 /*
 Run computation and update this trace accordingly
 */
-RandomExecutionTrace.prototype.traceUpdate = prob(function traceUpdate(structureIsFixed)
+RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFixed)
 {
 	var origtrace = trace
 	trace = this
@@ -248,9 +146,6 @@ RandomExecutionTrace.prototype.traceUpdate = prob(function traceUpdate(structure
 	// by the computation will become active
 	for (var name in this.vars)
 		this.vars[name].active = false
-
-	// Mark that this is the 'root' frame of the computation
-	this.rootframe = getStack(0, 1)[0].getFunction()
 
 	// Run the computation, creating/looking up random variables
 	this.returnValue = this.computation()
@@ -274,7 +169,7 @@ RandomExecutionTrace.prototype.traceUpdate = prob(function traceUpdate(structure
 
 	// Reset the original singleton trace
 	trace = origtrace
-})
+}
 
 /*
 Propose a random change to a random variable 'varname'
@@ -299,78 +194,18 @@ RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname, s
 /*
 Return the current structural name, as determined by the interpreter stack
 */
-if (maintainOwnStack)
+RandomExecutionTrace.prototype.currentName = function currentName()
 {
-	RandomExecutionTrace.prototype.currentName = function currentName(numFrameSkip)
-	{
-		var nameMinusLoopCounter = nameStack.slice(0,-1).join(':')
-		var loopnum = this.loopcounters[nameMinusLoopCounter] || 0
-		this.loopcounters[nameMinusLoopCounter] = loopnum + 1
-		var name = nameMinusLoopCounter + ":" + nameStack[nameStack.length-1]
-		return name
-	}
-}
-else
-{
-	RandomExecutionTrace.prototype.currentName = function currentName(numFrameSkip)
-	{
-		// Get list of stack frames
-		var frames = []
-		var ii = 0
-		var k = numFrameSkip+1
-		//var f = getStack(k, 1)[0]		// This has problems...
-		var f = getStack(1, k)[k-1]
-		var rootid = this.rootframe.__probabilistic_lexical_id
-		while (f && rootid !== f.getFunction().__probabilistic_lexical_id)
-		{
-			if (!f.getFunction().__probabilistic_lexical_id)
-			{
-				var fnname = f.getFunctionName() || "<anonymous>"
-				throw new Error("Function '" + fnname + "' was not decorated with 'prob'")
-			}
-			frames[ii] = f
-			ii++
-			k++
-			f = getStack(k, 1)[0]
-		}
-		var i = frames.length-1
-		if (frames.length == 0) throw new Error("No stack frames available! JIT weirdness?")
-
-		// Build up name string, checking loop counters along the way
-		var name = ""
-		var loopnum = 0
-		var f = null
-		for (var j = i; j > 0; j--)
-		{
-			f = frames[j]
-			name += f.getFunction().__probabilistic_lexical_id
-			name += ":"
-			name += f.pos
-			loopnum = (this.loopcounters[name] || 0)
-			name += ":"
-			name += loopnum
-			name += "|"
-		}
-		// For the last (topmost) frame, also increment the loop counter
-		f = frames[0]
-		name += f.getFunction().__probabilistic_lexical_id
-		name += ":"
-		name += f.pos
-		loopnum = (this.loopcounters[name] || 0)
-		this.loopcounters[name] += 1
-		name += ":"
-		name += loopnum
-
-		//console.log(name)
-		return name
-	}
+	var loopnum = this.loopcounters[idstack] || 0
+	this.loopcounters[idstack] = loopnum + 1
+	return JSON.stringify(idstack) + ":" + loopnum
 }
 
 /*
 Looks up the value of a random variable.
 Creates the variable if it does not already exist
 */
-RandomExecutionTrace.prototype.lookup = function lookup(erp, params, numFrameSkip, isStructural, conditionedValue)
+RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructural, conditionedValue)
 {
 	var record = null
 	var name = null
@@ -382,7 +217,7 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, numFrameSki
 		record = this.varlist[this.currVarIndex]
 	else
 	{
-		name = this.currentName(numFrameSkip + 1)
+		name = this.currentName()
 		record = this.vars[name]
 		if (!record || record.erp != erp || record.structural != isStructural)
 			record = null
@@ -447,7 +282,7 @@ RandomExecutionTrace.prototype.conditionOn = function conditionOn(boolexpr)
 
 // Exported functions for interacting with the global trace
 
-function lookupVariableValue(erp, params, isStructural, numFrameSkip, conditionedValue)
+function lookupVariableValue(erp, params, isStructural, conditionedValue)
 {
 	if (!trace)
 	{
@@ -455,7 +290,7 @@ function lookupVariableValue(erp, params, isStructural, numFrameSkip, conditione
 	}
 	else
 	{
-		return trace.lookup(erp, params, numFrameSkip+1, isStructural, conditionedValue)
+		return trace.lookup(erp, params, isStructural, conditionedValue)
 	}
 }
 
@@ -479,7 +314,8 @@ function condition(boolexpr)
 
 module.exports =
 {
-	prob: prob,
+	enterfn: enterfn,
+	leavefn: leavefn,
 	lookupVariableValue: lookupVariableValue,
 	newTrace: newTrace,
 	factor: factor,

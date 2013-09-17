@@ -18,11 +18,7 @@ RandomPrimitive.prototype.logprob = function ERP_logprob(val, params)
 
 RandomPrimitive.prototype.sample = function ERP_sample(params, isStructural, conditionedValue)
 {
-	// The '+ 0' is there in case V8 ever implements tail call optimization
-	//return trace.lookupVariableValue(this, params, isStructural, 2, conditionedValue) + 0
-    //however, doing +0 screws up return value for any non-number domains...
-    return trace.lookupVariableValue(this, params, isStructural, 2, conditionedValue)
-
+    return trace.lookupVariableValue(this, params, isStructural, conditionedValue)
 }
 
 RandomPrimitive.prototype.proposal = function ERP_proposal(currval, params)
@@ -65,11 +61,11 @@ FlipRandomPrimitive.prototype.logProposalProb = function Flip_logProposalProb(cu
 }
 
 var flipInst = new FlipRandomPrimitive()
-var flip = trace.prob(function flip(p, isStructural, conditionedValue)
+var flip = function flip(p, isStructural, conditionedValue)
 {
 	p = (p == undefined) ? 0.5 : p
 	return flipInst.sample([p], isStructural, conditionedValue) + 0
-})
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,23 +132,23 @@ MultinomialRandomPrimitive.prototype.logProposalProb = function Multinomial_logP
 }
 
 var multinomialInst = new MultinomialRandomPrimitive()
-var multinomial = trace.prob(function multinomial(theta, isStructural, conditionedValue)
+var multinomial = function multinomial(theta, isStructural, conditionedValue)
 {
 	return multinomialInst.sample(theta, isStructural, conditionedValue) + 0
-})
+}
 
-var multinomialDraw = trace.prob(function multinomialDraw(items, probs, isStructural)
+var multinomialDraw = function multinomialDraw(items, probs, isStructural)
 {
 	return items[multinomial(probs, isStructural)]
-})
+}
 
-var uniformDraw = trace.prob(function uniformDraw(items, isStructural)
+var uniformDraw = function uniformDraw(items, isStructural)
 {
 	var probs = []
 	for (var i = 0; i < items.length; i++)
 		probs[i] = 1/items.length
 	return items[multinomial(probs, isStructural)]
-})
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -174,10 +170,10 @@ UniformRandomPrimitive.prototype.logprob = function Uniform_logprob(val, params)
 }
 
 var uniformInst = new UniformRandomPrimitive()
-var uniform = trace.prob(function uniform(lo, hi, isStructural, conditionedValue)
+var uniform = function uniform(lo, hi, isStructural, conditionedValue)
 {
 	return uniformInst.sample([lo, hi], isStructural, conditionedValue) + 0
-})
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -231,10 +227,10 @@ GaussianRandomPrimitive.prototype.logProposalProb = function Gaussian_logProposa
 }
 
 var gaussianInst = new GaussianRandomPrimitive()
-var gaussian = trace.prob(function gaussian(mu, sigma, isStructural, conditionedValue)
+var gaussian = function gaussian(mu, sigma, isStructural, conditionedValue)
 {
 	return gaussianInst.sample([mu, sigma], isStructural, conditionedValue) + 0
-})
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -287,10 +283,10 @@ GammaRandomPrimtive.prototype.logprob = function Gamma_logprob(val, params)
 }
 
 var gammaInst = new GammaRandomPrimtive()
-var gamma = trace.prob(function gamma(a, b, isStructural, conditionedValue)
+var gamma = function gamma(a, b, isStructural, conditionedValue)
 {
 	return gammaInst.sample([a, b], isStructural, conditionedValue) + 0
-})
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -328,10 +324,10 @@ BetaRandomPrimitive.prototype.logprob = function Beta_logprob(val, params)
 }
 
 var betaInst = new BetaRandomPrimitive()
-var beta = trace.prob(function beta(a, b, isStructural, conditionedValue)
+var beta = function beta(a, b, isStructural, conditionedValue)
 {
 	return betaInst.sample([a, b], isStructural, conditionedValue) + 0
-})
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -406,10 +402,10 @@ BinomialRandomPrimitive.prototype.logprob = function Binomial_logprob(val, param
 }
 
 var binomialInst = new BinomialRandomPrimitive()
-var binomial = trace.prob(function binomial(p, n, isStructural, conditionedValue)
+var binomial = function binomial(p, n, isStructural, conditionedValue)
 {
 	return binomialInst.sample([p,n], isStructural, conditionedValue) + 0
-})
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -481,10 +477,10 @@ PoissonRandomPrimitive.prototype.logprob = function Poisson_logprob(val, params)
 }
 
 var poissonInst = new PoissonRandomPrimitive()
-var poisson = trace.prob(function poisson(mu, isStructural, conditionedValue)
+var poisson = function poisson(mu, isStructural, conditionedValue)
 {
 	return poissonInst.sample([mu], isStructural, conditionedValue) + 0
-})
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -533,10 +529,10 @@ DirichletRandomPrimitive.prototype.logprob = function Dirichlet_logprob(val, par
 }
 
 var dirichletInst = new DirichletRandomPrimitive()
-var dirichlet = trace.prob(function dirichlet(alpha, isStructural, conditionedValue)
+var dirichlet = function dirichlet(alpha, isStructural, conditionedValue)
 {
 	return dirichletInst.sample(alpha, isStructural, conditionedValue).concat([])
-})
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////

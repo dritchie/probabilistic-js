@@ -4,6 +4,7 @@ var control = require("./control")
 var inference = require("./inference")
 var memoize = require("./memoize")
 var marginalize = require("./marginalize")
+var transform = require("./transform")
 
 module.exports = {}
 
@@ -31,9 +32,11 @@ for (var prop in memoize)
 for (var prop in marginalize)
     module.exports[prop] = marginalize[prop]
 
-/*
-Since source transformation induces dependencies on esprima and escodegen,
-and since not everyone will need/want to use it, the index does not forward
-the exports from transport. Include transport directly if you want those
-features (or call transport from the command line to transfom files directly)
-*/
+// Forward transform exports
+for (var prop in transform)
+	module.exports[prop] = transform[prop]
+
+//// We also forward 'openModule' from util.js,
+//// b/c this makes source transformation easier.
+var util = require("./util")
+module.exports["openModule"] = util.openModule
