@@ -42,9 +42,6 @@ output(hist)
       var outmirror = null
 
       var pr = require("./probabilistic/index")
-      var util = require("./probabilistic/util")
-      var transform = require("./probabilistic/transform")
-      util.openModule(pr)
 
       function __updateOutput(str)
       {
@@ -76,7 +73,7 @@ output(hist)
         var codestring = editor.getValue()
         try
         {
-          codestring = transform.probTransform(codestring)
+          codestring = pr.probTransform(codestring)
           eval(codestring)
         }
         catch (e)
