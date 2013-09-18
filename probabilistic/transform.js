@@ -97,7 +97,7 @@ function probTransform(codeString)
 {
 	var ast = esprima.parse(codeString)
 	estraverse.replace(ast, callWrapper)
-	var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic/index')\n} catch (e) {\n\t__pr = require('./probabilistic/index')\n}\n__pr.openModule(__pr)\n"
+	var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic/index')\n} catch (e) {\n\t__pr = require('./probabilistic/index')\n}\n__pr.openModule(__pr);\n"
 	return preamble + escodegen.generate(ast)
 }
 
