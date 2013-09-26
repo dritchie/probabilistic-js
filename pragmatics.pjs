@@ -2,10 +2,10 @@
 testing the nested-query pragmatics model in js
 */
 
-var util = require("./probabilistic/util")
-util.openModule(util)
-var pr = require("./probabilistic/index")
-util.openModule(pr)
+//var util = require("./probabilistic/util")
+//util.openModule(util)
+//var pr = require("./probabilistic/index")
+//util.openModule(pr)
 
 
 /////////////////////////////
@@ -19,36 +19,36 @@ util.openModule(pr)
 ////this avoids setting and resampling the conditioned ERP. (does not work with rejection sampling!)
 /////////////////////////////
 
-var meaning = prob(function(utterance)
+var meaning = function(utterance)
 {
-    if(utterance == "foo"){return prob(function(w){return w})} //"foo" is true only in true worlds.
-    return prob(function(w){return true}) //"bar" is always true
-})
+    if(utterance == "foo"){return function(w){return w}} //"foo" is true only in true worlds.
+    return function(w){return true} //"bar" is always true
+}
 
-var listener = prob(function(utterance) {
+var listener = function(utterance) {
     var world = flip(); //world prior
     //speaker(world, utterance)
-    condition(speaker(world,utterance) == utterance)
+    condition(speaker.conditionTo(utterance)(world) == utterance)
     return world
-})
+}
 
 
-var speaker = marginalizeConditioned(
-                        prob(function(world) {
+var speaker = marginalize(
+                       function(world) {
                           var utterance = flip() ? "foo" : "bar"
                           //litlistener(utterance, world)
-                          condition(litlistener(utterance,world) == world)
+                          condition(litlistener.conditionTo(world)(utterance) == world)
                           return utterance
-                          }), samplefn, samplesPerLevel)
+                          }, samplefn, samplesPerLevel)
 
 
-var litlistener = marginalizeConditioned(
-                            prob(function(utterance)
+var litlistener = marginalize(
+                            function(utterance)
                               {
                               var world = flip(); //world prior
                               condition(meaning(utterance)(world)) //simple stand-in for truth-functional meaning..
                               return world
-                              }), samplefn, samplesPerLevel)
+                              }, samplefn, samplesPerLevel)
 
 /////////////////////////////
 
@@ -63,7 +63,7 @@ var litlistener = marginalizeConditioned(
 //    means[i] = hist[0]
 //}
 
-var comp = prob(function() {return listener("bar")})
+var comp = function() {return listener("bar")}
 
 var samplefn = traceMH //bunchaRejectionSample
 

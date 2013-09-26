@@ -3,23 +3,26 @@ var lag = 20
 var runs = 5
 var errorTolerance = 0.07
 
+var failed=[]
+
 function test(name, estimates, trueExpectation, tolerance)
 {
 	tolerance = (tolerance === undefined ? errorTolerance : tolerance)
 	console.log("test: " + name + "...")
 	var errors = estimates.map(function(est) { return Math.abs(est - trueExpectation) })
 	var meanAbsError = mean(errors)
-	if (meanAbsError > tolerance)
+	if (meanAbsError > tolerance) {
+        failed.push(name)
 		console.log("      failed! True mean: " + trueExpectation + " | Test mean: " + mean(estimates))
-	else
-		console.log("      passed.")
+    }
+    else console.log("      passed.")
 }
 
 function mhtest(name, computation, trueExpectation, tolerance)
 {
 	tolerance = (tolerance === undefined ? errorTolerance : tolerance)
-	//test(name, repeat(runs, function() { return expectation(computation, traceMH, samples, lag) }), trueExpectation, tolerance)
-	test(name, repeat(runs, function() { return expectation(computation, LARJMH, samples, 0, undefined, lag) }), trueExpectation, tolerance)
+	test(name, repeat(runs, function() { return expectation(computation, traceMH, samples, lag) }), trueExpectation, tolerance)
+	//test(name, repeat(runs, function() { return expectation(computation, LARJMH, samples, 0, undefined, lag) }), trueExpectation, tolerance)
 }
 
 function larjtest(name, computation, trueExpectation, tolerance)
@@ -39,6 +42,7 @@ function eqtest(name, estvalues, truevalues, tolerance)
 		var truev = truevalues[i]
 		if (Math.abs(estv - truev) > tolerance)
 		{
+            failed.push(name)
 			console.log("      failed! True value: " + truev + " | Test value: " + estv)
 			return
 		}
@@ -436,6 +440,23 @@ mhtest(
 	0.5)
 
 
+test(
+     "marginalized procedure",
+     repeat(runs,
+            function() {
+            var foo = marginalize(function foo(x) {return flip() + flip(x)}, traceMH, 500)
+            var computation = function() {return flip() + foo(0.1) + foo(0.6) + foo(0.1)}
+            return expectation(computation, traceMH, samples, lag)
+            }),
+     2.8000000000000003,
+     0.1)
+
+//mhtest("nested query",
+//       function() {
+//       ...
+//       },
+//       ?)
+
 /*
 Tests for things specific to new implementation
 */
@@ -469,7 +490,11 @@ mhtest(
 	0.75)
 
 
-console.log("tests done!")
-
 var d2 = new Date()
 console.log("time: " + (d2.getTime() - d1.getTime()) / 1000)
+
+if (failed.length == 0) {
+    console.log("tests done!")
+} else {
+    console.log("some tests failed: " + failed + "!!!")
+}
