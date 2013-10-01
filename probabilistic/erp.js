@@ -496,7 +496,7 @@ function dirichlet_sample(alpha)
 	var t;
 	for (var i = 0; i < alpha.length; i++)
 	{
-		t = gamma_sample(a, 1)
+		t = gamma_sample(alpha[i], 1)
 		theta[i] = t
 		ssum = ssum + t
 	}
