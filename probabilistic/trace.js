@@ -307,9 +307,9 @@ function lookupVariableValue(erp, params, isStructural, conditionedValue)
 	}
 }
 
-function newTrace(computation)
+function newTrace(computation, doRejectionInit)
 {
-	return new RandomExecutionTrace(computation)
+	return new RandomExecutionTrace(computation, doRejectionInit)
 }
 
 function factor(num)
