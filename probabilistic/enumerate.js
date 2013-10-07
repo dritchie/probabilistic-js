@@ -49,6 +49,7 @@ function enumerateDist(computation) {
             } else {
                 v.val = newval
             }
+            v.logprob = v.erp.logprob(v.val, v.params)
         }
         // accumulate this ret/prob in marginal:
         currTrace.traceUpdate()
