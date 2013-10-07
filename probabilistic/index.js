@@ -27,7 +27,7 @@ for (var prop in inference)
 
 // Forward enumerate exports
 for (var prop in enumerate)
-module.exports[prop] = inference[prop]
+module.exports[prop] = enumerate[prop]
 
 // Forward memoize exports
 for (var prop in memoize)

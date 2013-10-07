@@ -10,7 +10,7 @@ Assumes:
 Returns a discrete distribution (the marginal on return values).
 */
 
-function enumerate(computation) {
+function enumerateDist(computation) {
     var dist = {}
     function addElt(val, logprob) {
         var stringrep = JSON.stringify(val)
@@ -23,12 +23,17 @@ function enumerate(computation) {
     }
     
 //    initialize at start of domain for each ERP:
-    trace.initEnumerate = true
-	var currentTrace = trace.newTrace(computation, false) //no rejectionInit
+    trace.startEnumerate()
+	var currTrace = trace.newTrace(computation, false) //no rejectionInit
+    currTrace.traceUpdate()
+    addElt(currTrace.returnValue, currTrace.logprob)
+    //FIXME: does this score include conditions?
+    
+//    console.log(currTrace.vars)
 
     
 //    while the first ERP hasn't rolled over, increment, update, score
-    while() {
+    while (true) {
         var names = currTrace.freeVarNames() //FIXME: check order
         var newval = null
         while (newval == null) {
@@ -40,22 +45,24 @@ function enumerate(computation) {
             var v = currTrace.getRecord(varname)
             var newval = v.erp.nextVal(v.val)
             if (newval == null) {
-                v.val == v.erp.nextVal(null) //get first in domain
+                v.val = v.erp.nextVal(null) //get first in domain
             } else {
                 v.val = newval
             }
         }
         // accumulate this ret/prob in marginal:
         currTrace.traceUpdate()
-        addElt(currTrace.returnValue, returnValue.logprob)
+        addElt(currTrace.returnValue, currTrace.logprob)
+//        console.log(currTrace.vars)
+
     }
     
-    trace.initEnumerate = false
+    trace.stopEnumerate()
 }
 
 
 
 module.exports =
 {
-enumerate: enumerate
+enumerateDist: enumerateDist
 }

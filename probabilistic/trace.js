@@ -1,13 +1,19 @@
 var util = require("./util")
 
-var initEnumerate = false
-
 /*
 Callsite name management
 */
 var idstack = []
 function enterfn(id) { idstack.push(id) }
 function leavefn(id) { idstack.pop() }
+
+/*
+Enumeration sets new ERP calls to start of domain. Flag for this behavior:
+*/
+var initEnumerate = false
+function startEnumerate() {initEnumerate = true}
+function stopEnumerate() {initEnumerate = false}
+
 
 
 /*
@@ -58,9 +64,7 @@ function RandomExecutionTrace(computation, doRejectionInit)
 			this.vars = {}
 			this.traceUpdate()
 		}
-	} else {
-        this.traceUpdate()
-    }
+	}
 }
 
 RandomExecutionTrace.prototype.deepcopy = function deepcopy()
@@ -303,9 +307,9 @@ function lookupVariableValue(erp, params, isStructural, conditionedValue)
 	}
 }
 
-function newTrace(computation, doRejectionInit)
+function newTrace(computation)
 {
-	return new RandomExecutionTrace(computation, doRejectionInit)
+	return new RandomExecutionTrace(computation)
 }
 
 function factor(num)
@@ -323,7 +327,8 @@ function condition(boolexpr)
 
 module.exports =
 {
-    initEnumerate: initEnumerate,
+    startEnumerate: startEnumerate,
+    stopEnumerate: stopEnumerate,
 	enterfn: enterfn,
 	leavefn: leavefn,
 	lookupVariableValue: lookupVariableValue,
