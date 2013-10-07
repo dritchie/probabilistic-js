@@ -26,7 +26,7 @@ function enumerateDist(computation) {
     trace.startEnumerate()
 	var currTrace = trace.newTrace(computation, false) //no rejectionInit
     currTrace.traceUpdate()
-    addElt(currTrace.returnValue, currTrace.logprob)
+    if (currTrace.conditionsSatisfied) addElt(currTrace.returnValue, currTrace.logprob)
     //FIXME: does this score include conditions?
     
 //    console.log(currTrace.vars)
@@ -52,7 +52,7 @@ function enumerateDist(computation) {
         }
         // accumulate this ret/prob in marginal:
         currTrace.traceUpdate()
-        addElt(currTrace.returnValue, currTrace.logprob)
+        if (currTrace.conditionsSatisfied) addElt(currTrace.returnValue, currTrace.logprob)
 //        console.log(currTrace.vars)
 
     }
