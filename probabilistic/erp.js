@@ -33,6 +33,12 @@ RandomPrimitive.prototype.logProposalProb = function ERP_logProposalProb(currval
 	return this.logprob(propval, params)
 }
 
+RandomPrimitive.prototype.nextVal = function ERP_nextVal(currval)
+{
+    // When currval is null, start at beginning of domain when last val passed, return null.
+	throw new Error("ERP subclasses must implement nextVal for domain enumeration!")
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -58,6 +64,16 @@ FlipRandomPrimitive.prototype.proposal = function Flip_proposal(currval, params)
 FlipRandomPrimitive.prototype.logProposalProb = function Flip_logProposalProb(currval, propval, params)
 {
 	return 0
+}
+
+FlipRandomPrimitive.prototype.nextVal = function Flip_nextVal(currval)
+{
+    if (currval == null) {
+        return 0
+    } else if (currval == 0) {
+        return 1
+    }
+    return null
 }
 
 var flipInst = new FlipRandomPrimitive()

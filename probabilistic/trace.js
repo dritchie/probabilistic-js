@@ -1,5 +1,7 @@
 var util = require("./util")
 
+var initEnumerate = false
+
 /*
 Callsite name management
 */
@@ -56,7 +58,9 @@ function RandomExecutionTrace(computation, doRejectionInit)
 			this.vars = {}
 			this.traceUpdate()
 		}
-	}
+	} else {
+        this.traceUpdate()
+    }
 }
 
 RandomExecutionTrace.prototype.deepcopy = function deepcopy()
@@ -222,10 +226,15 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
 		if (!record || record.erp != erp || record.structural != isStructural)
 			record = null
 	}
+    
 	// If we didn't find the variable, create a new one
 	if (!record)
 	{
-		var val = conditionedValue || erp.sample_impl(params)
+        if (initEnumerate) { // If we are doing ennumeration init new vars to first val in domain:
+            var val = erp.nextVal(null)
+        } else {
+            var val = conditionedValue || erp.sample_impl(params)
+        }
 		var ll = erp.logprob(val, params)
 		this.newlogprob += ll
 		record = new RandomVariableRecord(name, erp, params, val, ll, isStructural, conditionedValue !== undefined)
@@ -294,9 +303,9 @@ function lookupVariableValue(erp, params, isStructural, conditionedValue)
 	}
 }
 
-function newTrace(computation)
+function newTrace(computation, doRejectionInit)
 {
-	return new RandomExecutionTrace(computation)
+	return new RandomExecutionTrace(computation, doRejectionInit)
 }
 
 function factor(num)
@@ -314,6 +323,7 @@ function condition(boolexpr)
 
 module.exports =
 {
+    initEnumerate: initEnumerate,
 	enterfn: enterfn,
 	leavefn: leavefn,
 	lookupVariableValue: lookupVariableValue,
