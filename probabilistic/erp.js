@@ -66,7 +66,7 @@ FlipRandomPrimitive.prototype.logProposalProb = function Flip_logProposalProb(cu
 	return 0
 }
 
-FlipRandomPrimitive.prototype.nextVal = function Flip_nextVal(currval)
+FlipRandomPrimitive.prototype.nextVal = function Flip_nextVal(currval, params)
 {
     if (currval == null) {
         return 0
@@ -145,6 +145,16 @@ MultinomialRandomPrimitive.prototype.logProposalProb = function Multinomial_logP
 	var newparams = params.slice()
 	newparams[currval] = 0
 	return multinomial_logprob(propval, newparams)
+}
+
+MultinomialRandomPrimitive.prototype.nextVal = function Multinomial_nextVal(currval, params)
+{
+    if (currval == null) {
+        return 0
+    } else if (currval < params.length-1) {
+        return currval+1
+    }
+    return null
 }
 
 var multinomialInst = new MultinomialRandomPrimitive()

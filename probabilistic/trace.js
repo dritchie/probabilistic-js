@@ -235,7 +235,7 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
 	if (!record)
 	{
         if (initEnumerate) { // If we are doing ennumeration init new vars to first val in domain:
-            var val = erp.nextVal(null)
+            var val = erp.nextVal(null, params)
         } else {
             var val = conditionedValue || erp.sample_impl(params)
         }

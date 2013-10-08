@@ -27,7 +27,6 @@ function enumerateDist(computation) {
 	var currTrace = trace.newTrace(computation, false) //no rejectionInit
     currTrace.traceUpdate()
     if (currTrace.conditionsSatisfied) addElt(currTrace.returnValue, currTrace.logprob)
-    //FIXME: does this score include conditions?
     
 //    console.log(currTrace.vars)
 
@@ -43,9 +42,9 @@ function enumerateDist(computation) {
             //otherwise get next var and increment:
             var varname = names.pop()
             var v = currTrace.getRecord(varname)
-            var newval = v.erp.nextVal(v.val)
+            var newval = v.erp.nextVal(v.val, v.params)
             if (newval == null) {
-                v.val = v.erp.nextVal(null) //get first in domain
+                v.val = v.erp.nextVal(null, v.params) //get first in domain
             } else {
                 v.val = newval
             }
