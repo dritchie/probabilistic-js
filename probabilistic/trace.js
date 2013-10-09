@@ -74,18 +74,20 @@ function RandomExecutionTrace(computation, init)
             var names = this.freeVarNames()
             var newval = null
             while (newval == null) {
-                // if we are out of names it means we're done enumerating with no satisfying execution!
-                if (names.length == 0) {throw new Error("No executions satisfy conditions!")}
+                // if we are out of names it means we're done enumerating with no satisfying execution, randomize non-enumerable vars and try again:
+                if (names.length == 0) {this.vars = {}; break}
                 
                 //otherwise get next var and increment:
                 var varname = names.pop()
                 var v = this.getRecord(varname)
-                //FIXME: if no nextVal fn, should sample?
-                var newval = v.erp.nextVal(v.val, v.params)
-                if (newval == null) {
-                    v.val = v.erp.nextVal(null, v.params) //get first in domain
-                } else {
-                    v.val = newval
+                //if the domain is enumerable, go to next value:
+                if (typeof v.erp.nextVal === 'function') {
+                    var newval = v.erp.nextVal(v.val, v.params)
+                    if (newval == null) {
+                        v.val = v.erp.nextVal(null, v.params) //get first in domain
+                    } else {
+                        v.val = newval
+                    }
                 }
                 v.logprob = v.erp.logprob(v.val, v.params)
             }
@@ -262,7 +264,7 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
 	// If we didn't find the variable, create a new one
 	if (!record)
 	{
-        if (initEnumerate) { // If we are doing ennumeration init new vars to first val in domain:
+        if (initEnumerate && typeof erp.nextVal === 'function') { // If we are doing ennumeration init new vars to first val in domain:
             var val = erp.nextVal(null, params)
         } else {
             var val = conditionedValue || erp.sample_impl(params)
