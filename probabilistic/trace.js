@@ -63,10 +63,14 @@ function RandomExecutionTrace(computation, init)
 			this.vars = {}
 			this.traceUpdate()
 		}
-	} else if (init=="enumerate") { //TODO: test
+	} else if (init=="enumerate") {
         startEnumerate()
         this.traceUpdate()
         while (!this.conditionsSatisfied) {
+            for(v in this.vars){console.log(this.vars[v].val)}
+            console.log
+            console.log("")
+
             var names = this.freeVarNames()
             var newval = null
             while (newval == null) {
@@ -85,6 +89,7 @@ function RandomExecutionTrace(computation, init)
                 }
                 v.logprob = v.erp.logprob(v.val, v.params)
             }
+            this.traceUpdate()
         }
         stopEnumerate()
     }
