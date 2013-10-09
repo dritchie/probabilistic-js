@@ -57,6 +57,31 @@ function RandomExecutionTrace(computation, init)
 	this.conditionsSatisfied = false
 	this.returnValue = null
 
+    var nextstate = function(trace) {
+        var names = trace.freeVarNames()
+        var newval = null
+        while (newval == null) {
+            // if we are out of names it means we're done enumerating with no satisfying execution, return null.
+            if (names.length == 0) {return null}
+            
+            //otherwise get next var:
+            var varname = names.pop()
+            var v = trace.getRecord(varname)
+            
+            //if the domain is enumerable, go to next value:
+            if (typeof v.erp.nextVal === 'function') {
+                var newval = v.erp.nextVal(v.val, v.params)
+                if (newval == null) {
+                    v.val = v.erp.nextVal(null, v.params) //get first in domain
+                } else {
+                    v.val = newval
+                }
+                v.logprob = v.erp.logprob(v.val, v.params)
+            }
+        }
+        return varname
+    }
+    
 	if (init == "rejection") {
 		while (!this.conditionsSatisfied)
 		{
@@ -67,33 +92,39 @@ function RandomExecutionTrace(computation, init)
         startEnumerate()
         this.traceUpdate()
         while (!this.conditionsSatisfied) {
-            for(v in this.vars){console.log(this.vars[v].val)}
-            console.log
-            console.log("")
-
-            var names = this.freeVarNames()
-            var newval = null
-            while (newval == null) {
-                // if we are out of names it means we're done enumerating with no satisfying execution, randomize non-enumerable vars and try again:
-                if (names.length == 0) {this.vars = {}; break}
-                
-                //otherwise get next var and increment:
-                var varname = names.pop()
-                var v = this.getRecord(varname)
-                //if the domain is enumerable, go to next value:
-                if (typeof v.erp.nextVal === 'function') {
-                    var newval = v.erp.nextVal(v.val, v.params)
-                    if (newval == null) {
-                        v.val = v.erp.nextVal(null, v.params) //get first in domain
-                    } else {
-                        v.val = newval
-                    }
-                }
-                v.logprob = v.erp.logprob(v.val, v.params)
-            }
+            var r = nextstate(this)
+            if (r == null) {this.vars = {}} //if we didn't find a satsfying state, reset.
             this.traceUpdate()
         }
         stopEnumerate()
+    } else if (init=="lessdumb") {
+        stopEnumerate() //FIXME: why do i need this? where is enumerateInit getting truned on??
+        this.traceUpdate()
+        var i=1, esteps=1
+        while (!this.conditionsSatisfied) {
+            if(i%esteps == 0) {
+                //reset and initialize randomly:
+                this.vars = {}
+                this.traceUpdate()
+                //do more enumeration after every restart:
+                esteps += 10
+            } else {
+                try { //Geometric can blow up, because "000..." is the infinite execution. catch max callstack error and default to rejection.
+                    startEnumerate()
+                    var r = nextstate(this)
+                    if (r == null) {this.vars = {}} //if we didn't find a satsfying state, reset.
+                    this.traceUpdate()
+                    stopEnumerate()}
+                catch(err) {
+                    //on error default to rejection...
+                    console.log("caught error: " + err + ".")
+                    stopEnumerate()
+                    this.vars = {}
+                    this.traceUpdate()
+                }
+            }
+            i += 1
+        }
     }
 }
 
