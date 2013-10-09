@@ -340,10 +340,11 @@ LARJKernel.prototype.stats = function LARJKernel_stats()
 /*
 Do MCMC for 'numsamps' iterations using a given transition kernel
 */
-function mcmc(computation, kernel, numsamps, lag, verbose)
+function mcmc(computation, kernel, numsamps, lag, verbose, init)
 {
 	lag = (lag === undefined ? 1 : lag)
-	var currentTrace = trace.newTrace(computation)
+    init = (init == undefined ? "rejection" : init)
+	var currentTrace = trace.newTrace(computation, init)
 	var samps = []
 	var iters = numsamps*lag
 	for (var i = 0; i < iters; i++)
@@ -363,10 +364,10 @@ Sample from a probabilistic computation for some
 number of iterations using single-variable-proposal
 Metropolis-Hastings 
 */
-function traceMH(computation, numsamps, lag, verbose)
+function traceMH(computation, numsamps, lag, verbose, init)
 {
 	lag = (lag === undefined ? 1 : lag)
-	return mcmc(computation, new RandomWalkKernel(), numsamps, lag, verbose)
+	return mcmc(computation, new RandomWalkKernel(), numsamps, lag, verbose, init)
 }
 
 
@@ -381,6 +382,33 @@ function LARJMH(computation, numsamps, annealSteps, jumpFreq, lag, verbose)
 				new LARJKernel(new RandomWalkKernel(false, true), annealSteps, jumpFreq),
 				numsamps, lag, verbose)
 }
+
+
+/*
+ Create conditional thunk.
+ Options includes the algorithm and any algorithm-specific params.
+ FIXME: finish
+*/
+
+function conditional(computation, options) {
+    switch (options.algorithm) {
+        case "traceMH":
+            
+            break
+            
+        case "LARJMH":
+            
+            break
+            
+        default: //rejection
+            return function() {
+                return rejectionSample(computation)
+            }
+            
+    }
+    
+}
+
 
 
 module.exports = 
