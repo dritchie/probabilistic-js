@@ -24,7 +24,7 @@ var hist =
           var a = flip()
           var b = flip()
           condition(a || b)
-          return (a && b)
+          return a
       },
       traceMH,
       1000)
@@ -42,6 +42,9 @@ output(hist)
       var outmirror = null
 
       var pr = require("./probabilistic/index")
+      var util = require("./probabilistic/util")
+      var transform = require("./probabilistic/transform")
+      util.openModule(pr)
 
       function __updateOutput(str)
       {
@@ -73,7 +76,7 @@ output(hist)
         var codestring = editor.getValue()
         try
         {
-          codestring = pr.probTransform(codestring)
+          codestring = transform.probTransform(codestring)
           eval(codestring)
         }
         catch (e)

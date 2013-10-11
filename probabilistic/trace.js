@@ -3,9 +3,40 @@ var util = require("./util")
 /*
 Callsite name management
 */
-var idstack = []
-function enterfn(id) { idstack.push(id) }
+//var idstack = []
+//function enterfn(id) { idstack.push(id) }
+//function leavefn(id) { idstack.pop() }
+
+var idstack = [""]
+function enterfn(id) { idstack.push(idstack[idstack.length-1] + ":" + id) }
 function leavefn(id) { idstack.pop() }
+
+//var idstack= [0]
+//var max_id
+//function setmaxid(id) {max_id = id}
+//function enterfn(id) { idstack.push(idstack[idstack.length-1] + id*Math.pow(max_id,idstack.length+2)) }
+//function leavefn(id) { idstack.pop() }
+
+
+/*
+ Return the current structural name, as determined by the interpreter stack and loop counters of the trace
+ */
+function currentName(trace)
+{
+    //	var loopnum = this.loopcounters[idstack] || 0
+    //	this.loopcounters[idstack] = loopnum + 1
+    //	return JSON.stringify(idstack) + ":" + loopnum
+    //    return idstack.slice().push(loopnum)
+    //    return [idstack, loopnum]
+    
+    
+    var id = idstack[idstack.length-1]
+    var loopnum = trace.loopcounters[id] || 0
+    trace.loopcounters[id] = loopnum + 1
+	return id + ":" + loopnum
+//    return id + max_id*loopnum //fixme: wrong if loopnum>max_id
+}
+
 
 /*
 Enumeration sets new ERP calls to start of domain. Flag for this behavior:
@@ -260,15 +291,23 @@ RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname, s
 	return [nextTrace, fwdPropLP, rvsPropLP]
 }
 
-/*
-Return the current structural name, as determined by the interpreter stack
-*/
-RandomExecutionTrace.prototype.currentName = function currentName()
-{
-	var loopnum = this.loopcounters[idstack] || 0
-	this.loopcounters[idstack] = loopnum + 1
-	return JSON.stringify(idstack) + ":" + loopnum
-}
+///*
+//Return the current structural name, as determined by the interpreter stack
+//*/
+//RandomExecutionTrace.prototype.currentName = function currentName()
+//{
+////	var loopnum = this.loopcounters[idstack] || 0
+////	this.loopcounters[idstack] = loopnum + 1
+////	return JSON.stringify(idstack) + ":" + loopnum
+////    return idstack.slice().push(loopnum)
+////    return [idstack, loopnum]
+//    
+//    
+//    var id = idstack[idstack.length-1]
+//    var loopnum = this.loopcounters[id] || 0
+//    this.loopcounters[id] = loopnum + 1
+//	return id + ":" + loopnum
+//}
 
 /*
 Looks up the value of a random variable.
@@ -276,21 +315,19 @@ Creates the variable if it does not already exist
 */
 RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructural, conditionedValue)
 {
-	var record = null
-	var name = null
-
-	// Try to find the variable (first check the flat list, then do 
-	// slower structural lookup)
-	var varIsInFlatList = this.currVarIndex < this.varlist.length
-	if (varIsInFlatList)
-		record = this.varlist[this.currVarIndex]
-	else
-	{
-		name = this.currentName()
-		record = this.vars[name]
-		if (!record || record.erp != erp || record.structural != isStructural)
-			record = null
-	}
+    var record = null
+    var name = null
+    
+    // Try to find the variable (first check the flat list, then do
+    // slower structural lookup)
+    var varIsInFlatList = this.currVarIndex < this.varlist.length
+    if (varIsInFlatList) {
+        record = this.varlist[this.currVarIndex]
+    } else {
+        name = currentName(this)
+        record = this.vars[name]
+        if (!record || record.erp != erp || record.structural != isStructural) {record = null}
+    }
     
 	// If we didn't find the variable, create a new one
 	if (!record)
@@ -307,8 +344,7 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
 	}
 	// Otherwise, reuse the variable we found, but check if its parameters/conditioning
 	// status have changed
-	else
-	{
+	else {
 		record.conditioned = (conditionedValue != undefined)
 		var hasChanges = false
 		if (!util.arrayEquals(record.params, params))
@@ -322,16 +358,16 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
 			record.conditioned = true
 			hasChanges = true
 		}
-		if (hasChanges)
-			record.logprob = erp.logprob(record.val, record.params)
-	}
+		if (hasChanges) {record.logprob = erp.logprob(record.val, record.params)}
+    }
+    
 	// Finish up and return
-	if (!varIsInFlatList)
-		this.varlist.push(record)
-	this.currVarIndex++
-	this.logprob += record.logprob
-	record.active = true
-	return record.val
+	if (!varIsInFlatList){ this.varlist.push(record)}
+    
+    this.currVarIndex++
+    this.logprob += record.logprob
+    record.active = true
+    return record.val
 }
 
 // Simply retrieve the variable record associated with 'name'
@@ -392,6 +428,7 @@ module.exports =
     stopEnumerate: stopEnumerate,
 	enterfn: enterfn,
 	leavefn: leavefn,
+//    setmaxid: setmaxid,
 	lookupVariableValue: lookupVariableValue,
 	newTrace: newTrace,
 	factor: factor,
