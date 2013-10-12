@@ -8,6 +8,7 @@
     <script src="codemirror/matchbrackets.js"></script>
     <script src="codemirror/continuecomment.js"></script>
     <script src="codemirror/javascript.js"></script>
+    <script src="store.js"></script>
     <script src="probabilistic.js"></script>
     <link rel="stylesheet" href="codemirror/docs.css">
     <style type="text/css">.CodeMirror {border-top: 1px solid black; border-bottom: 1px solid black;}</style>
@@ -39,6 +40,11 @@ output(hist)
         matchBrackets: true,
         continueComments: "Enter"
       });
+      
+      var savedCode = store.get('code');
+      if (savedCode) {editor.setValue(savedCode);}
+    
+      
       var outmirror = null
 
       var pr = require("./probabilistic/index")
@@ -74,6 +80,7 @@ output(hist)
       function __runCode()
       {
         var codestring = editor.getValue()
+        store.set('code', codestring);
         try
         {
           codestring = transform.probTransform(codestring)

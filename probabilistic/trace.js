@@ -3,40 +3,28 @@ var util = require("./util")
 /*
 Callsite name management
 */
-//var idstack = []
-//function enterfn(id) { idstack.push(id) }
-//function leavefn(id) { idstack.pop() }
 
 var idstack = [""]
 function enterfn(id) { idstack.push(idstack[idstack.length-1] + ":" + id) }
 function leavefn(id) { idstack.pop() }
-
-//var idstack= [0]
-//var max_id
-//function setmaxid(id) {max_id = id}
-//function enterfn(id) { idstack.push(idstack[idstack.length-1] + id*Math.pow(max_id,idstack.length+2)) }
-//function leavefn(id) { idstack.pop() }
-
-
-/*
- Return the current structural name, as determined by the interpreter stack and loop counters of the trace
- */
-function currentName(trace)
-{
-    //	var loopnum = this.loopcounters[idstack] || 0
-    //	this.loopcounters[idstack] = loopnum + 1
-    //	return JSON.stringify(idstack) + ":" + loopnum
-    //    return idstack.slice().push(loopnum)
-    //    return [idstack, loopnum]
-    
-    
+//Return the current structural name, as determined by the interpreter stack and loop counters of the trace:
+function currentName(trace){
     var id = idstack[idstack.length-1]
     var loopnum = trace.loopcounters[id] || 0
     trace.loopcounters[id] = loopnum + 1
 	return id + ":" + loopnum
-//    return id + max_id*loopnum //fixme: wrong if loopnum>max_id
 }
 
+// //Old version (slower):
+//var idstack = []
+//function enterfn(id) { idstack.push(id) }
+//function leavefn(id) { idstack.pop() }
+//function currentName(trace)
+//{
+//    var loopnum = trace.loopcounters[idstack] || 0
+//    trace.loopcounters[idstack] = loopnum + 1
+//    return JSON.stringify(idstack) + ":" + loopnum
+//}
 
 /*
 Enumeration sets new ERP calls to start of domain. Flag for this behavior:
@@ -57,7 +45,7 @@ function RandomVariableRecord(name, erp, params, val, logprob, structural, condi
 	this.params = params
 	this.val = val
 	this.logprob = logprob
-	this.active = true
+	this.active = false //this is true if var is touched by traceUpdate (for keeping track of unused vars after MH proposal)
 	this.structural = structural
 	this.conditioned = conditioned
 }
@@ -83,13 +71,13 @@ function RandomExecutionTrace(computation, init)
 	this.logprob = 0.0
 	this.newlogprob = 0.0
 	this.oldlogprob = 0.0
-	this.rootframe = null
 	this.loopcounters = {}
 	this.conditionsSatisfied = false
 	this.returnValue = null
 
     var nextstate = function(trace) {
         var names = trace.freeVarNames()
+        
         var newval = null
         while (newval == null) {
             // if we are out of names it means we're done enumerating with no satisfying execution, return null.
@@ -116,8 +104,7 @@ function RandomExecutionTrace(computation, init)
 	if (init == "rejection") {
 		while (!this.conditionsSatisfied)
 		{
-			this.vars = {}
-			this.traceUpdate()
+			this.reset()
 		}
 	} else if (init=="enumerate") {
         startEnumerate()
@@ -135,29 +122,39 @@ function RandomExecutionTrace(computation, init)
         while (!this.conditionsSatisfied) {
             if(i%esteps == 0) {
                 //reset and initialize randomly:
-                this.vars = {}
-                this.traceUpdate()
+                this.reset()
                 //do more enumeration after every restart:
                 esteps += 10
             } else {
-                try { //Geometric can blow up, because "000..." is the infinite execution. catch max callstack error and default to rejection.
+                //try { //Geometric can blow up, because "000..." is the infinite execution. catch max callstack error and default to rejection.
                     startEnumerate()
                     var r = nextstate(this)
-                    if (r == null) {this.vars = {}} //if we didn't find a satsfying state, reset.
-                    this.traceUpdate()
-                    stopEnumerate()}
-                catch(err) {
-                    //on error default to rejection...
-                    console.log("caught error: " + err + ".")
+                    if (r == null) {
+                        this.reset() //if we didn't find a satsfying state, reset.
+                    } else {
+                        this.traceUpdate()
+                    }
                     stopEnumerate()
-                    this.vars = {}
-                    this.traceUpdate()
-                }
+//            } catch(err) {
+//                    //on error default to rejection...
+//                    console.log("caught error: " + err + ".")
+//                    stopEnumerate()
+//                    this.vars = {}
+//                    this.traceUpdate()
+//                }
             }
             i += 1
         }
     }
 }
+
+RandomExecutionTrace.prototype.reset = function reset()
+{
+    this.vars = {}
+    this.varlist = []
+    this.traceUpdate()
+}
+
 
 RandomExecutionTrace.prototype.deepcopy = function deepcopy()
 {
@@ -183,13 +180,13 @@ RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(structural, 
 	structural = (structural == undefined ? true : structural)
 	nonstructural = (nonstructural == undefined ? true : nonstructural)
 	var names = []
-	for (var name in this.vars)
+	for (var i=0;i<this.varlist.length;i++)
 	{
-		var rec = this.vars[name]
+		var rec = this.varlist[i]
 		if (!rec.conditioned &&
 			((structural && rec.structural) || (nonstructural && !rec.structural)))
-			names.push(name)
-	}
+			names.push(rec.name)
+            }
 	return names
 }
 
@@ -236,37 +233,34 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
 	this.loopcounters = {}
 	this.conditionsSatisfied = true
 	this.currVarIndex = 0
-
+    
 	// If updating this trace can change the variable structure, then we
 	// clear out the flat list of variables beforehand
-	if (!structureIsFixed)
-		this.varlist.length = 0
-
-	// Mark all variables as inactive; only those reached
-	// by the computation will become active
-	for (var name in this.vars)
-		this.vars[name].active = false
-
+	if (!structureIsFixed) {
+        var oldvarlist = this.varlist
+        this.varlist=[]}
+    
 	// Run the computation, creating/looking up random variables
 	this.returnValue = this.computation()
 
 	// Clean up
-	this.rootframe = null
 	this.loopcounters = {}
 
-	// Clear out any random values that are no longer reachable
-	var newvars = {}
-	this.oldlogprob = 0.0
-	for (var name in this.vars)
-	{
-		var rec = this.vars[name]
-		if (!rec.active)
-			this.oldlogprob += rec.logprob
-		else
-			newvars[name] = rec
-	}
-	this.vars = newvars
-
+    this.oldlogprob = 0.0
+    if (!structureIsFixed) {
+        // Clear out any random values that are no longer reachable
+        for(i=0;i<oldvarlist.length;i++) {
+            rec = oldvarlist[i]
+            if(!rec.active) {
+                this.oldlogprob += rec.logprob
+                delete this.vars[rec.name]
+            }
+        }
+    }
+    
+    //reset active record marks for next traceUpdate..
+    for(i=0;i<this.varlist.length;i++) {this.varlist[i].active = false}
+    
 	// Reset the original singleton trace
 	trace = origtrace
 }
@@ -291,23 +285,6 @@ RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname, s
 	return [nextTrace, fwdPropLP, rvsPropLP]
 }
 
-///*
-//Return the current structural name, as determined by the interpreter stack
-//*/
-//RandomExecutionTrace.prototype.currentName = function currentName()
-//{
-////	var loopnum = this.loopcounters[idstack] || 0
-////	this.loopcounters[idstack] = loopnum + 1
-////	return JSON.stringify(idstack) + ":" + loopnum
-////    return idstack.slice().push(loopnum)
-////    return [idstack, loopnum]
-//    
-//    
-//    var id = idstack[idstack.length-1]
-//    var loopnum = this.loopcounters[id] || 0
-//    this.loopcounters[id] = loopnum + 1
-//	return id + ":" + loopnum
-//}
 
 /*
 Looks up the value of a random variable.
@@ -362,11 +339,10 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
     }
     
 	// Finish up and return
-	if (!varIsInFlatList){ this.varlist.push(record)}
-    
     this.currVarIndex++
     this.logprob += record.logprob
     record.active = true
+    if (!varIsInFlatList){ this.varlist.push(record)}
     return record.val
 }
 
