@@ -41,7 +41,7 @@ output(hist)
         continueComments: "Enter"
       });
       
-      var savedCode = store.get('code');
+      var savedCode = store.get('jscode');
       if (savedCode) {editor.setValue(savedCode);}
     
       
@@ -80,7 +80,7 @@ output(hist)
       function __runCode()
       {
         var codestring = editor.getValue()
-        store.set('code', codestring);
+        store.set('jscode', codestring);
         try
         {
           codestring = transform.probTransform(codestring)
