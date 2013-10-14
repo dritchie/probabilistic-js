@@ -55,7 +55,7 @@ STKernel.prototype.next = function STKernel_next(trace) {
         vals.push(val)
         v.val = val
         v.logprob = v.erp.logprob(v.val, v.params)
-        trace.traceUpdate()
+        trace.traceUpdate(true)
         probs.push(trace.conditionsSatisfied?Math.exp(trace.logprob):0)
         val = v.erp.nextVal(val, v.params)
     }
@@ -72,7 +72,7 @@ STKernel.prototype.next = function STKernel_next(trace) {
     var i = util.discreteChoice(transition)
     v.val = vals[i]
     v.logprob = v.erp.logprob(v.val, v.params)
-    trace.traceUpdate()
+    trace.traceUpdate(true) //cache instead of recomputing?
     
     return trace
 }

@@ -16,7 +16,9 @@ if (!String.prototype.format) {
   };
 }
 
-var replcode = "(function() {__pr.enterfn({0}); var ret = __p_REPLACEME_p__; __pr.leavefn(); return ret; })()"
+//var replcode = "(function() {__pr.enterfn({0}); var ret = __p_REPLACEME_p__; __pr.leavefn(); return ret; })()"
+var replcode = "(function() {enterfn({0}); var ret = __p_REPLACEME_p__; leavefn(); return ret; })()"
+
 
 function makeWrappedCallReplacer(callNode)
 {
@@ -97,7 +99,8 @@ function probTransform(codeString)
 {
 	var ast = esprima.parse(codeString)
 	estraverse.replace(ast, callWrapper)
-	var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic/index')\n} catch (e) {\n\t__pr = require('./probabilistic/index')\n}\n__pr.openModule(__pr);\n" //+ "__pr.setmaxid(" + nextid + ");\n"
+	var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic/index')\n} catch (e) {\n\t__pr = require('./probabilistic/index')\n}\n__pr.openModule(__pr);\n" + "var enterfn = __pr.enterfn, leavefn = __pr.leavefn;\n"
+    //+ "__pr.setmaxid(" + nextid + ");\n"
 	return preamble + escodegen.generate(ast)
 }
 
