@@ -1,5 +1,6 @@
 var trace = require("./trace")
 var util = require("./util")
+var STKernel = require("./STKernel")
 
 /*
 Compute the discrete distribution over the given computation
@@ -106,14 +107,15 @@ function RandomWalkKernel(structural, nonstructural)
 RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 {
 	this.proposalsMade += 1
-	var name = util.randomChoice(currTrace.freeVarNames(this.structural, this.nonstructural))
-
+    
+    var currNames = currTrace.freeVarNames(this.structural, this.nonstructural)
+    
 	/*
 	If we have no free random variables, then just run the computation
 	and generate another sample (this may not actually be deterministic,
 	in the case of nested query)
 	*/
-	if (!name)
+	if (currNames.length==0)
 	{
 		currTrace.traceUpdate(!this.structural)
 		return currTrace
@@ -124,19 +126,19 @@ RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 	*/
 	else
 	{
-		var retval = currTrace.proposeChange(name, !this.structural)
-		var nextTrace = retval[0]; var fwdPropLP = retval[1]; var rvsPropLP = retval[2]
-		fwdPropLP -= Math.log(currTrace.freeVarNames(this.structural, this.nonstructural).length)
-		rvsPropLP -= Math.log(nextTrace.freeVarNames(this.structural, this.nonstructural).length)
+        var name = util.randomChoice(currNames)
+		var retval = currTrace.proposeChange(name)
+		var nextTrace = retval[0]
+		var fwdPropLP = retval[1] - Math.log(currNames.length)
+		var rvsPropLP = retval[2] - Math.log(nextTrace.freeVarNames(this.structural, this.nonstructural).length)
 		var acceptThresh = nextTrace.logprob - currTrace.logprob + rvsPropLP - fwdPropLP
 		if (nextTrace.conditionsSatisfied && Math.log(Math.random()) < acceptThresh)
 		{
 			this.proposalsAccepted += 1
 			return nextTrace
 		}
-		else
-			return currTrace
 	}
+    return currTrace //if we haven't accepted, return currTrace
 }
 
 RandomWalkKernel.prototype.stats = function RandomWalk_stats()
@@ -144,6 +146,7 @@ RandomWalkKernel.prototype.stats = function RandomWalk_stats()
 	console.log("Acceptance ratio: " + this.proposalsAccepted/this.proposalsMade + " (" +
 		this.proposalsAccepted + "/" + this.proposalsMade + ")")
 }
+
 
 
 /*
@@ -186,9 +189,8 @@ LARJInterpolationTrace.prototype.freeVarNames = function LARJInterpTrace_freeVar
 	return util.keys(set)
 }
 
-LARJInterpolationTrace.prototype.proposeChange = function LARJInterpTrace_proposeChange(varname, structureIsFixed)
+LARJInterpolationTrace.prototype.proposeChange = function LARJInterpTrace_proposeChange(varname)
 {
-	if (!structureIsFixed) throw new Error("Structure must be fixed for LARJ annealing proposals!")
 	var v1 = this.trace1.getRecord(varname)
 	var v2 = this.trace2.getRecord(varname)
 	var nextTrace = new LARJInterpolationTrace(v1 ? this.trace1.deepcopy() : this.trace1,
@@ -205,13 +207,13 @@ LARJInterpolationTrace.prototype.proposeChange = function LARJInterpTrace_propos
 	{
 		v1.val = propval
 		v1.logprob = v1.erp.logprob(v1.val, v1.params)
-		nextTrace.trace1.traceUpdate(structureIsFixed)
+		nextTrace.trace1.traceUpdate(!v1.structural)
 	}
 	if (v2)
 	{
 		v2.val = propval
 		v2.logprob = v2.erp.logprob(v2.val, v2.params)
-		nextTrace.trace2.traceUpdate(structureIsFixed)
+		nextTrace.trace2.traceUpdate(v2.structural)
 	}
 	return [nextTrace, fwdPropLP, rvsPropLP]
 }
@@ -383,6 +385,15 @@ function LARJMH(computation, numsamps, annealSteps, jumpFreq, lag, verbose)
 				numsamps, lag, verbose)
 }
 
+/*
+ Sample from a probabilistic computation using Suwa-Todo (irreversible kernel) 
+*/
+function traceST(computation, numsamps, lag, verbose, init)
+{
+	lag = (lag === undefined ? 1 : lag)
+	return mcmc(computation, new STKernel.STKernel(), numsamps, lag, verbose, init)
+}
+
 
 /*
  Create conditional thunk.
@@ -420,5 +431,6 @@ module.exports =
 	rejectionSample: rejectionSample,
     bunchaRejectionSample: bunchaRejectionSample,
 	traceMH: traceMH,
-	LARJMH: LARJMH
+	LARJMH: LARJMH,
+    traceST: traceST
 }

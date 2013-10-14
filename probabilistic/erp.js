@@ -49,7 +49,7 @@ FlipRandomPrimitive.prototype = Object.create(RandomPrimitive.prototype)
 
 FlipRandomPrimitive.prototype.sample_impl = function Flip_sample_impl(params)
 {
-	return (Math.random() < params[0])
+	return (Math.random() < params[0])+0
 }
 
 FlipRandomPrimitive.prototype.logprob = function Flip_logprob(val, params)

@@ -28,6 +28,22 @@ function randomChoice(arr)
 	return arr[Math.floor(Math.random()*arr.length)]
 }
 
+function discreteChoice(theta)
+{
+	var result = 0
+	var k = theta.length
+	var thetasum = 0
+	for (var i = 0; i < k; i++){thetasum += theta[i]}
+    var x = Math.random() * thetasum
+    var probAccum = 1e-6
+    while (result < k && x > probAccum)
+    {
+        probAccum += theta[result]
+        result++
+    }
+	return result-1
+}
+
 function keys(obj)
 {
 	var a = []
@@ -45,5 +61,6 @@ module.exports =
 	openModule: openModule,
 	arrayEquals: arrayEquals,
 	randomChoice: randomChoice,
+    discreteChoice: discreteChoice,
 	keys: keys
 }

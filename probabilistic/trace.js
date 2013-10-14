@@ -15,16 +15,6 @@ function currentName(trace){
 	return id + ":" + loopnum
 }
 
-// //Old version (slower):
-//var idstack = []
-//function enterfn(id) { idstack.push(id) }
-//function leavefn(id) { idstack.pop() }
-//function currentName(trace)
-//{
-//    var loopnum = trace.loopcounters[idstack] || 0
-//    trace.loopcounters[idstack] = loopnum + 1
-//    return JSON.stringify(idstack) + ":" + loopnum
-//}
 
 /*
 Enumeration sets new ERP calls to start of domain. Flag for this behavior:
@@ -74,6 +64,7 @@ function RandomExecutionTrace(computation, init)
 	this.loopcounters = {}
 	this.conditionsSatisfied = false
 	this.returnValue = null
+    this.structureIsFixed = false
 
     var nextstate = function(trace) {
         var names = trace.freeVarNames()
@@ -180,13 +171,11 @@ RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(structural, 
 	structural = (structural == undefined ? true : structural)
 	nonstructural = (nonstructural == undefined ? true : nonstructural)
 	var names = []
-	for (var i=0;i<this.varlist.length;i++)
+	for (var i=0, rec; rec = this.varlist[i]; i++)
 	{
-		var rec = this.varlist[i]
-		if (!rec.conditioned &&
-			((structural && rec.structural) || (nonstructural && !rec.structural)))
-			names.push(rec.name)
-            }
+		if (!rec.conditioned &&   ((structural && rec.structural) || (nonstructural && !rec.structural)))
+        {names.push(rec.name)}
+    }
 	return names
 }
 
@@ -233,12 +222,15 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
 	this.loopcounters = {}
 	this.conditionsSatisfied = true
 	this.currVarIndex = 0
+    structureIsFixed = (structureIsFixed===undefined?false:structureIsFixed)
+    this.structureIsFixed = structureIsFixed
     
 	// If updating this trace can change the variable structure, then we
 	// clear out the flat list of variables beforehand
 	if (!structureIsFixed) {
         var oldvarlist = this.varlist
-        this.varlist=[]}
+        this.varlist=[]
+    }
     
 	// Run the computation, creating/looking up random variables
 	this.returnValue = this.computation()
@@ -249,8 +241,7 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
     this.oldlogprob = 0.0
     if (!structureIsFixed) {
         // Clear out any random values that are no longer reachable
-        for(i=0;i<oldvarlist.length;i++) {
-            rec = oldvarlist[i]
+        for(var i=0,rec; rec = oldvarlist[i]; i++) {
             if(!rec.active) {
                 this.oldlogprob += rec.logprob
                 delete this.vars[rec.name]
@@ -259,7 +250,7 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
     }
     
     //reset active record marks for next traceUpdate..
-    for(i=0;i<this.varlist.length;i++) {this.varlist[i].active = false}
+    for(var i=0, v; v=this.varlist[i]; i++) {v.active = false}
     
 	// Reset the original singleton trace
 	trace = origtrace
@@ -270,7 +261,7 @@ Propose a random change to a random variable 'varname'
 Returns a new sample trace from the computation and the
 forward and reverse probabilities of this proposal
 */
-RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname, structureIsFixed)
+RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname)
 {
 	var nextTrace = this.deepcopy()
 	var v = nextTrace.getRecord(varname)
@@ -279,7 +270,8 @@ RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname, s
 	var rvsPropLP = v.erp.logProposalProb(propval, v.val, v.params)
 	v.val = propval
 	v.logprob = v.erp.logprob(v.val, v.params)
-	nextTrace.traceUpdate(structureIsFixed)
+//	nextTrace.traceUpdate(structureIsFixed)
+    nextTrace.traceUpdate(!v.structural)
 	fwdPropLP += nextTrace.newlogprob
 	rvsPropLP += nextTrace.oldlogprob
 	return [nextTrace, fwdPropLP, rvsPropLP]
@@ -295,10 +287,8 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
     var record = null
     var name = null
     
-    // Try to find the variable (first check the flat list, then do
-    // slower structural lookup)
-    var varIsInFlatList = this.currVarIndex < this.varlist.length
-    if (varIsInFlatList) {
+    // If structure of this trace is fixed get variable from flatlist, otherwise do slower structural lookup
+    if (this.structureIsFixed) {
         record = this.varlist[this.currVarIndex]
     } else {
         name = currentName(this)
@@ -342,7 +332,7 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
     this.currVarIndex++
     this.logprob += record.logprob
     record.active = true
-    if (!varIsInFlatList){ this.varlist.push(record)}
+    if (!this.structureIsFixed){ this.varlist.push(record)}
     return record.val
 }
 
