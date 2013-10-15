@@ -30,18 +30,16 @@ function randomChoice(arr)
 
 function discreteChoice(theta)
 {
-	var result = 0
 	var k = theta.length
 	var thetasum = 0
-	for (var i = 0; i < k; i++){thetasum += theta[i]}
-    var x = Math.random() * thetasum
-    var probAccum = 0
-    while (result < k && x >= probAccum)
-    {
-        probAccum += theta[result]
-        result++
+	for (var i = 0; i < k; i++) {thetasum += theta[i]}
+	var x = Math.random() * thetasum
+	var probAccum = 0
+    for(var i=0; i<k; i++) {
+        probAccum += theta[i]
+        if(probAccum >= x) {return i} //FIXME: if x=0 returns i=0, but this isn't right if theta[0]==0...
     }
-	return result-1
+    return k
 }
 
 function keys(obj)
