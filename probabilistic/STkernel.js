@@ -13,13 +13,13 @@ function infill(probs) {
     var numprobs = probs.length
     var startInd = probs.indexOf(Math.max.apply(null,probs))
     var transition = []
-    for(i=startInd; i<startInd+numprobs; i++) {
+    for(var i=startInd; i<startInd+numprobs; i++) {
         var sourcebin = i%numprobs
         transition[sourcebin]=[]
-        for(j=0; j<numprobs; j++) {transition[sourcebin][j] = 0} //is there a better way to init array to 0s?
+        for(var j=0; j<numprobs; j++) {transition[sourcebin][j] = 0} //is there a better way to init array to 0s?
         var source = probs[sourcebin]
         var bin=sourcebin
-        while(source>1e-6) {
+        while(source>1e-12) {
             bin= (bin+1)%numprobs
             //put as much or source into next bin as will fit..
             var fill = Math.min(source, infill[bin])
@@ -45,6 +45,7 @@ STKernel.prototype.next = function STKernel_next(trace) {
     var currNames = trace.freeVarNames(false, true) //NOTE: for now only make ST updates to non-structural, enumerable vars
     var name = util.randomChoice(currNames)
 	var v = trace.getRecord(name)
+    if(typeof v.erp.nextVal != 'function'){throw new Error("Oops, can't do ST update to non-enumerable variable.")}
     var origval = v.val
     
     //enumerate all the values of the chosen variable, score trace for each
@@ -54,7 +55,7 @@ STKernel.prototype.next = function STKernel_next(trace) {
     while(val!=null) {
         vals.push(val)
         v.val = val
-        v.logprob = v.erp.logprob(v.val, v.params)
+        v.logprob = v.erp.logprob(val, v.params)
         trace.traceUpdate(true)
         probs.push(trace.conditionsSatisfied?Math.exp(trace.logprob):0)
         val = v.erp.nextVal(val, v.params)
@@ -64,7 +65,6 @@ STKernel.prototype.next = function STKernel_next(trace) {
     var n=0
     for(var i=0; i<probs.length; i++) {n+=probs[i]}
     for(var i=0; i<probs.length; i++) {probs[i]=probs[i]/n}
-    
     
     //sample from the infill for the current value
     var transitions = infill(probs)

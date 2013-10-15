@@ -35,8 +35,8 @@ function discreteChoice(theta)
 	var thetasum = 0
 	for (var i = 0; i < k; i++){thetasum += theta[i]}
     var x = Math.random() * thetasum
-    var probAccum = 1e-6
-    while (result < k && x > probAccum)
+    var probAccum = 0
+    while (result < k && x >= probAccum)
     {
         probAccum += theta[result]
         result++
