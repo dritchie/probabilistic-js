@@ -265,7 +265,7 @@ GammaRandomPrimtive.prototype = Object.create(RandomPrimitive.prototype)
 
 function gamma_sample(a,b)
 {
-    if(a < 1) return sample_gamma(1+a,b) * Math.pow(random(), 1/a);
+    if(a < 1) return gamma_sample(1+a,b) * Math.pow(random(), 1/a);
 
     var x,v,u;
     var d = a-1/3;
@@ -446,9 +446,9 @@ function poisson_sample(mu)
     while(mu > 10)
     {
         var m = 7/8*mu;
-        var x = Math.sample_gamma(m);
+        var x = gamma_sample(m);
 
-        if(x > mu) return k + sample_binomial(mu/x, m-1);
+        if(x > mu) return k + binomial_sample(mu/x, m-1);
         else{ mu -= x; k += m; }
     }
 

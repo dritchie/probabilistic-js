@@ -67,7 +67,7 @@ test(
 
 mhtest(
 	"flip query",
-	function() { return flip(0.7) },
+	function() { return flip(0.7, false) },
 	0.7)
 
 test(
@@ -77,7 +77,7 @@ test(
 
 mhtest(
 	"uniform query",
-	function() { return uniform(0.1, 0.4) },
+	function() { return uniform(0.1, 0.4, false) },
 	0.5*(.1+.4))
 
 test(
@@ -87,7 +87,7 @@ test(
 
 mhtest(
 	"multinomial query",
-	function() { return multinomialDraw([.2, .3, .4], [.2, .6, .2]) },
+	function() { return multinomialDraw([.2, .3, .4], [.2, .6, .2], false) },
 	0.2*.2 + 0.6*.3 + 0.2*.4)
 
 eqtest(
@@ -106,7 +106,7 @@ test(
 
 mhtest(
 	"gaussian query",
-	function() { return gaussian(0.1, 0.5) },
+	function() { return gaussian(0.1, 0.5, false) },
 	0.1)
 
 eqtest(
@@ -125,7 +125,7 @@ test(
 
 mhtest(
 	"gamma query",
-	function() { return gamma(2, 2)/10 },
+	function() { return gamma(2, 2, false)/10 },
 	0.4)
 
 eqtest(
@@ -144,7 +144,7 @@ test(
 
 mhtest(
 	"beta query",
-	function() { return beta(2, 5) },
+	function() { return beta(2, 5, false) },
 	2.0/(2+5))
 
 eqtest(
@@ -163,7 +163,7 @@ test(
 
 mhtest(
 	"binomial query",
-	function() { return binomial(.5, 40)/40 },
+	function() { return binomial(.5, 40, false)/40 },
 	0.5)
 
 eqtest(
@@ -182,7 +182,7 @@ test(
 
 mhtest(
 	"poisson query",
-	function() { return poisson(4)/10 },
+	function() { return poisson(4, false)/10 },
 	0.4)
 
 eqtest(
@@ -204,7 +204,7 @@ mhtest(
 	function()
 	{
 		var a = 1/1000
-		condition(flip(a))
+		condition(flip(a, false))
 		return a
 	},
 	1/1000,
@@ -214,8 +214,8 @@ mhtest(
 	"and conditioned on or",
 	function()
 	{
-		var a = flip()
-		var b = flip()
+		var a = flip(0.5, false)
+		var b = flip(0.5, false)
 		condition(a || b)
 		return (a && b)
 	},
@@ -225,8 +225,8 @@ mhtest(
 	"and conditioned on or, biased flip",
 	function()
 	{
-		var a = flip(0.3)
-		var b = flip(0.3)
+		var a = flip(0.3, false)
+		var b = flip(0.3, false)
 		condition(a || b)
 		return (a && b)
 	},
@@ -238,9 +238,9 @@ mhtest(
 	{
 		var bitflip = function(fidelity, x)
 		{
-			return flip(x ? fidelity : 1-fidelity)
+			return flip(x ? fidelity : 1-fidelity, false)
 		}
-		var hyp = flip(0.7)
+		var hyp = flip(0.7, false)
 		condition(bitflip(0.8, hyp))
 		return hyp
 	},
@@ -251,9 +251,9 @@ mhtest(
 	function()
 	{
 		if (flip(0.7))
-			return flip(0.2)
+			return flip(0.2, false)
 		else
-			return flip(0.8)
+			return flip(0.8, false)
 	},
 	0.7*0.2 + 0.3*0.8)
 
@@ -261,7 +261,7 @@ mhtest(
 	"flip with random weight, unconditioned",
 	function()
 	{
-		return flip(flip(0.7) ? 0.2 : 0.8)
+		return flip(flip(0.7, false) ? 0.2 : 0.8, false)
 	},
 	0.7*0.2 + 0.3*0.8)
 
@@ -270,8 +270,8 @@ mhtest(
 	function()
 	{
 		var proc = flip(0.7) ?
-			function (x) { return flip(0.2) } :
-			function (x) { return flip(0.8) }
+			function (x) { return flip(0.2, false) } :
+			function (x) { return flip(0.8, false) }
 		return proc(1)
 	},
 	0.7*0.2 + 0.3*0.8)
@@ -280,10 +280,10 @@ mhtest(
 	"conditioned multinomial",
 	function()
 	{
-		var hyp = multinomialDraw(['b', 'c', 'd'], [0.1, 0.6, 0.3])
+		var hyp = multinomialDraw(['b', 'c', 'd'], [0.1, 0.6, 0.3], false)
 		var observe = function (x)
 		{
-			if (flip(0.8))
+			if (flip(0.8, false))
 				return x
 			else
 				return 'b'
@@ -329,7 +329,7 @@ mhtest(
 	"memoized flip, unconditioned",
 	function()
 	{
-		var proc = mem(function (x) { return flip(0.8) })
+		var proc = mem(function (x) { return flip(0.8, false) })
 		var p11 = proc(1)
 		var p21 = proc(2)
 		var p12 = proc(1)
@@ -342,7 +342,7 @@ mhtest(
 	"memoized flip, conditioned",
 	function()
 	{
-		var proc = mem(function (x) { return flip(0.2) })
+		var proc = mem(function (x) { return flip(0.2, false) })
 		var p11 = proc(1)
 		var p21 = proc(2)
 		var p22 = proc(2)
@@ -356,7 +356,7 @@ mhtest(
 	"bound symbol used inside memoizer, unconditioned",
 	function()
 	{
-		var a = flip(0.8)
+		var a = flip(0.8, false)
 		var proc = mem(function (x) { return a })
 		var p11 = proc(1)
 		var p12 = proc(1)
@@ -368,9 +368,9 @@ mhtest(
 	"memoized flip with random argument, unconditioned",
 	function()
 	{
-		var proc = mem(function (x) { return flip(0.8) })
-		var p1 = proc(uniformDraw([1,2,3], true))
-		var p2 = proc(uniformDraw([1,2,3], true))
+		var proc = mem(function (x) { return flip(0.8, false) })
+		var p1 = proc(uniformDraw([1,2,3]))
+		var p2 = proc(uniformDraw([1,2,3]))
 		return p1 && p2
 	},
 	0.6933333333333334)
@@ -380,8 +380,8 @@ mhtest(
 	function()
 	{
 		var proc = flip(0.7) ?
-					function (x) { return flip(0.2)} :
-					function (x) { return flip(0.8)}
+					function (x) { return flip(0.2, false)} :
+					function (x) { return flip(0.8, false)}
 		var memproc = mem(proc)
 		var mp1 = memproc(1)
 		var mp2 = memproc(2)
@@ -395,11 +395,11 @@ mhtest(
 	{
 		var bitflip = function (fidelity, x)
 		{
-			return flip(x ? fidelity : 1-fidelity)
+			return flip(x ? fidelity : 1-fidelity, false)
 		}
 		var innerQuery = function()
 		{
-			var a = flip(0.7)
+			var a = flip(0.7, false)
 			condition(bitflip(0.8, a))
 			return a
 		}
@@ -411,7 +411,7 @@ mhtest(
 	"trans-dimensional",
 	function()
 	{
-		var a = flip(0.9, true) ? beta(1, 5) : 0.7
+		var a = flip(0.9, true) ? beta(1, 5, false) : 0.7
 		var b = flip(a, false)
 		condition(b)
 		return a
@@ -422,7 +422,7 @@ larjtest(
 	"trans-dimensional (LARJ)",
 	function()
 	{
-		var a = flip(0.9, true) ? beta(1, 5) : 0.7
+		var a = flip(0.9, true) ? beta(1, 5, false) : 0.7
 		var b = flip(a, false)
 		condition(b)
 		return a
@@ -468,7 +468,7 @@ mhtest(
 	{
 		var accum = 0
 		for (var i = 0; i < 4; i++)
-			accum += flip()
+			accum += flip(0.5, false)
 		return accum/4
 	},
 	0.5)
@@ -483,7 +483,7 @@ mhtest(
 			if (i < 5)
 				accum += flip(0.5, false, 1)
 			else
-				accum += flip(0.5)
+				accum += flip(0.5, false)
 		}
 		return accum / 10
 	},
