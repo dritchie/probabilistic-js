@@ -166,15 +166,25 @@ RandomExecutionTrace.prototype.deepcopy = function deepcopy()
 	return newdb
 }
 
-RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(structural, nonstructural)
+//RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(structural, nonstructural)
+//{
+//	structural = (structural == undefined ? true : structural)
+//	nonstructural = (nonstructural == undefined ? true : nonstructural)
+//	var names = []
+//	for (var i=0, rec; rec = this.varlist[i]; i++)
+//	{
+//		if ()
+//        {names.push(rec.name)}
+//    }
+//	return names
+//}
+RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(pred)
 {
-	structural = (structural == undefined ? true : structural)
-	nonstructural = (nonstructural == undefined ? true : nonstructural)
+	pred = (pred == undefined ? function(r){return true} : pred)
 	var names = []
 	for (var i=0, rec; rec = this.varlist[i]; i++)
 	{
-		if (!rec.conditioned &&   ((structural && rec.structural) || (nonstructural && !rec.structural)))
-        {names.push(rec.name)}
+		if (!rec.conditioned && pred(rec)) {names.push(rec.name)}
     }
 	return names
 }

@@ -35,17 +35,19 @@ function infill(probs) {
 function STKernel()
 {
 	this.proposalsMade = 0
-	this.proposalsAccepted = 0
+    this.STproposalsMade = 0
+    //NOTE: Only make ST updates to non-structural, enumerable vars:
+    this.pred = function(rec){return !rec.structural && (typeof rec.erp.nextVal === 'function')}
 }
 
 STKernel.prototype.next = function STKernel_next(trace) {
     this.proposalsMade += 1
     
     var trace = trace.deepcopy()
-    var currNames = trace.freeVarNames(false, true) //NOTE: for now only make ST updates to non-structural, enumerable vars
+    var currNames = trace.freeVarNames(this.pred)
+    
     var name = util.randomChoice(currNames)
 	var v = trace.getRecord(name)
-    if(typeof v.erp.nextVal != 'function'){throw new Error("Oops, can't do ST update to non-enumerable variable.")}
     var origval = v.val
     
     //enumerate all the values of the chosen variable, score trace for each
@@ -76,6 +78,12 @@ STKernel.prototype.next = function STKernel_next(trace) {
     
     return trace
 }
+
+STKernel.prototype.stats = function STKernel_stats()
+{
+	console.log("Poposals made: " + this.proposalsMade)
+}
+
 
 
 

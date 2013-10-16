@@ -94,12 +94,9 @@ function bunchaRejectionSample(computation, numsamps)
 MCMC transition kernel that takes random walks by tweaking a
 single variable at a time
 */
-function RandomWalkKernel(structural, nonstructural)
+function RandomWalkKernel(pred)
 {
-	structural = (structural == undefined ? true : structural)
-	nonstructural = (nonstructural == undefined ? true : nonstructural)
-	this.structural = structural
-	this.nonstructural = nonstructural
+    this.pred = pred
 	this.proposalsMade = 0
 	this.proposalsAccepted = 0
 }
@@ -108,7 +105,7 @@ RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 {
 	this.proposalsMade += 1
     
-    var currNames = currTrace.freeVarNames(this.structural, this.nonstructural)
+    var currNames = currTrace.freeVarNames(this.pred)
     
 	/*
 	If we have no free random variables, then just run the computation
@@ -130,7 +127,7 @@ RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 		var retval = currTrace.proposeChange(name)
 		var nextTrace = retval[0]
 		var fwdPropLP = retval[1] - Math.log(currNames.length)
-		var rvsPropLP = retval[2] - Math.log(nextTrace.freeVarNames(this.structural, this.nonstructural).length)
+		var rvsPropLP = retval[2] - Math.log(nextTrace.freeVarNames(this.pred).length)
 		var acceptThresh = nextTrace.logprob - currTrace.logprob + rvsPropLP - fwdPropLP
 		if (nextTrace.conditionsSatisfied && Math.log(Math.random()) < acceptThresh)
 		{
@@ -175,12 +172,10 @@ LARJInterpolationTrace.prototype.__defineGetter__("returnValue", function()
 	return this.trace2.returnValue
 })
 
-LARJInterpolationTrace.prototype.freeVarNames = function LARJInterpTrace_freeVarNames(structural, nonstructural)
+LARJInterpolationTrace.prototype.freeVarNames = function LARJInterpTrace_freeVarNames(pred)
 {
-	structural = (structural === undefined ? true : structural)
-	nonstructural = (nonstructural === undefined ? true : nonstructural)
-	var fv1 = this.trace1.freeVarNames(structural, nonstructural)
-	var fv2 = this.trace2.freeVarNames(structural, nonstructural)
+	var fv1 = this.trace1.freeVarNames(pred)
+	var fv2 = this.trace2.freeVarNames(pred)
 	var set = {}
 	for (var i = 0; i < fv1.length; i++)
 		set[fv1[i]] = true
@@ -233,12 +228,16 @@ function LARJKernel(diffusionKernel, annealSteps, jumpFreq)
 	this.diffusionProposalsAccepted = 0
 	this.annealingProposalsMade = 0
 	this.annealingProposalsAccepted = 0
+    
+    this.isStructural = function pred(rec){return rec.structural}
+    this.isNotStructural = function pred(rec){return !rec.structural}
+
 }
 
 LARJKernel.prototype.next = function LARJKernel_next(currTrace)
 {
-	var numStruct = currTrace.freeVarNames(true, false).length
-	var numNonStruct = currTrace.freeVarNames(false, true).length
+	var numStruct = currTrace.freeVarNames(this.isStructural).length
+	var numNonStruct = currTrace.freeVarNames(this.isNotStructural).length
 
 	// If we have no free random variables, then just run the computation
 	// and generate another sample (this may not actually be deterministic,
@@ -269,7 +268,7 @@ LARJKernel.prototype.jumpStep = function LARJKernel_jumpStep(currTrace)
 	var newStructTrace= currTrace.deepcopy()
 
 	// Randomly choose a structural variable to change
-	var structVars = newStructTrace.freeVarNames(true, false)
+	var structVars = newStructTrace.freeVarNames(this.isStructural)
 	var name = util.randomChoice(structVars)
 	var v = newStructTrace.getRecord(name)
 	var origval = v.val
@@ -278,14 +277,14 @@ LARJKernel.prototype.jumpStep = function LARJKernel_jumpStep(currTrace)
 	v.val = propval
 	v.logprob = v.erp.logprob(v.val, v.params)
 	newStructTrace.traceUpdate()
-	var oldNumVars = oldStructTrace.freeVarNames(true, false).length
-	var newNumVars = newStructTrace.freeVarNames(true, false).length
+	var oldNumVars = oldStructTrace.freeVarNames(this.isStructural).length
+	var newNumVars = newStructTrace.freeVarNames(this.isStructural).length
 	fwdPropLP += newStructTrace.newlogprob - Math.log(oldNumVars)
 
 	// We only actually do annealing if we have any non-structural variables and we're
 	// doing more than zero annealing steps
 	var annealingLpRatio = 0
-	if (oldStructTrace.freeVarNames(false, true) + newStructTrace.freeVarNames(false, true) !== 0 &&
+	if (oldStructTrace.freeVarNames(this.isNotStructural) + newStructTrace.freeVarNames(this.isNotStructural) !== 0 &&
 		this.annealSteps > 0)
 	{
 		var lerpTrace = new LARJInterpolationTrace(oldStructTrace, newStructTrace)
@@ -360,6 +359,17 @@ function mcmc(computation, kernel, numsamps, lag, verbose, init)
 	return samps
 }
 
+/*
+ Mixture kernel
+ */
+function mixKernel(k1,k2) { //FIXME: variable number, variable weights
+    this.k1=k1
+    this.k2=k2
+}
+
+mixKernel.prototype.next = function(trace){return Math.random()>0.5?this.k1.next(trace):this.k2.next(trace)}
+
+mixKernel.prototype.stats =function(){this.k1.stats(); this.k2.stats()}
 
 /*
 Sample from a probabilistic computation for some
@@ -381,7 +391,7 @@ function LARJMH(computation, numsamps, annealSteps, jumpFreq, lag, verbose)
 {
 	lag = (lag === undefined ? 1: lag)
 	return mcmc(computation,
-				new LARJKernel(new RandomWalkKernel(false, true), annealSteps, jumpFreq),
+				new LARJKernel(new RandomWalkKernel(function(rec){return !rec.structural}), annealSteps, jumpFreq),
 				numsamps, lag, verbose)
 }
 
@@ -391,7 +401,10 @@ function LARJMH(computation, numsamps, annealSteps, jumpFreq, lag, verbose)
 function traceST(computation, numsamps, lag, verbose, init)
 {
 	lag = (lag === undefined ? 1 : lag)
-	return mcmc(computation, new STKernel.STKernel(), numsamps, lag, verbose, init)
+    //make MH proposals to structural or non-enumerable ERPs:
+    var rwkernel = new RandomWalkKernel(function(rec){return rec.structural || (typeof rec.erp.nextVal != 'function')})
+    var kernel = new mixKernel(new STKernel.STKernel(), rwkernel)
+	return mcmc(computation, kernel, numsamps, lag, verbose, init)
 }
 
 
