@@ -284,8 +284,9 @@ LARJKernel.prototype.jumpStep = function LARJKernel_jumpStep(currTrace)
 	// We only actually do annealing if we have any non-structural variables and we're
 	// doing more than zero annealing steps
 	var annealingLpRatio = 0
-	if (oldStructTrace.freeVarNames(this.isNotStructural) + newStructTrace.freeVarNames(this.isNotStructural) !== 0 &&
-		this.annealSteps > 0)
+	if ((oldStructTrace.freeVarNames(this.isNotStructural).length
+         + newStructTrace.freeVarNames(this.isNotStructural).length) !== 0
+        && this.annealSteps > 0)
 	{
 		var lerpTrace = new LARJInterpolationTrace(oldStructTrace, newStructTrace)
 		var prevAccepted = this.diffusionKernel.proposalsAccepted

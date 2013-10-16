@@ -224,6 +224,8 @@ Run computation and update this trace accordingly
 */
 RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFixed)
 {
+    structureIsFixed = (structureIsFixed===undefined?false:structureIsFixed)
+    
 	var origtrace = trace
 	trace = this
 
@@ -232,7 +234,6 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
 	this.loopcounters = {}
 	this.conditionsSatisfied = true
 	this.currVarIndex = 0
-    structureIsFixed = (structureIsFixed===undefined?false:structureIsFixed)
     this.structureIsFixed = structureIsFixed
     
 	// If updating this trace can change the variable structure, then we

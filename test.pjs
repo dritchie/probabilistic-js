@@ -412,7 +412,7 @@ mhtest(
 	function()
 	{
 		var a = flip(0.9, true) ? beta(1, 5) : 0.7
-		var b = flip(a)
+		var b = flip(a, false)
 		condition(b)
 		return a
 	},
@@ -423,7 +423,7 @@ larjtest(
 	function()
 	{
 		var a = flip(0.9, true) ? beta(1, 5) : 0.7
-		var b = flip(a)
+		var b = flip(a, false)
 		condition(b)
 		return a
 	},

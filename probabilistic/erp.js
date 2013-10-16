@@ -18,6 +18,7 @@ RandomPrimitive.prototype.logprob = function ERP_logprob(val, params)
 
 RandomPrimitive.prototype.sample = function ERP_sample(params, isStructural, conditionedValue)
 {
+    isStructural = (isStructural===undefined)?true:isStructural //by default erp draws are structural..
     return trace.lookupVariableValue(this, params, isStructural, conditionedValue)
 }
 
