@@ -265,7 +265,7 @@ GammaRandomPrimtive.prototype = Object.create(RandomPrimitive.prototype)
 
 function gamma_sample(a,b)
 {
-    if(a < 1) return gamma_sample(1+a,b) * Math.pow(random(), 1/a);
+    if(a < 1) return gamma_sample(1+a,b) * Math.pow(Math.random(), 1/a);
 
     var x,v,u;
     var d = a-1/3;
