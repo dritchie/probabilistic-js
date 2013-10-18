@@ -8,7 +8,9 @@
     <script src="codemirror/matchbrackets.js"></script>
     <script src="codemirror/continuecomment.js"></script>
     <script src="codemirror/javascript.js"></script>
+    
     <script src="store.js"></script>
+    <script src="jquery.js"></script>
     <script src="probabilistic.js"></script>
     <link rel="stylesheet" href="codemirror/docs.css">
     <style type="text/css">.CodeMirror {border-top: 1px solid black; border-bottom: 1px solid black;}</style>
@@ -46,6 +48,7 @@ output(hist)
     
       
       var outmirror = null
+      var infomirror = null
 
       var pr = require("./probabilistic/index")
       var util = require("./probabilistic/util")
@@ -76,6 +79,17 @@ output(hist)
         var text = JSON.stringify(obj, null, '\t')
         __updateOutput(text)
       }
+    
+    function info(str)
+    {
+        if (!infomirror)
+        {
+            infomirror = CodeMirror(document.getElementById("info"))
+            infomirror.readonly = true
+        }
+        infomirror.setValue(infomirror.getValue() +"\n"+ str)
+    }
+    
 
       function __runCode()
       {
@@ -83,8 +97,31 @@ output(hist)
         store.set('jscode', codestring);
         try
         {
+          var d1 = new Date()
           codestring = transform.probTransform(codestring)
-          eval(codestring)
+          var d2 = new Date()
+//          var val = eval(codestring)
+//          var d3 = new Date()
+//          info("Compile time: " + (d2.getTime() - d1.getTime()) / 1000 +
+//               " Run time: " + (d3.getTime() - d2.getTime()) / 1000)
+//          info("Compiled code: \n\n" + codestring +"\n")
+
+//          var d2 = new Date()
+//          var val = prebake()
+//          var d3 = new Date()
+//          info(" Non-eval Run time: " + (d3.getTime() - d2.getTime()) / 1000)
+
+
+        $("body").append($("<script />", {
+                           html: "function compiled(){"+codestring+"}; val = compiled();"
+                   }))
+        var d3 = new Date()
+        info("Compile time: " + (d2.getTime() - d1.getTime()) / 1000 +
+             " Dynamic load run time: " + (d3.getTime() - d2.getTime()) / 1000)
+
+          
+
+          val
         }
         catch (e)
         {
@@ -104,7 +141,10 @@ output(hist)
     <button id="clearBtn" style="margin-top: 10px; font-size: 14pt; display: none" onclick="__clearOutput()">
       Clear
     </button>
+    <h3>Info:</h3>
+    <div id="info"></div>
     </div>
+    
 
   </body>
 </html>
