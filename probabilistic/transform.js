@@ -91,6 +91,7 @@ var callWrapper =
 	}
 }
 
+var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic/index')\n} catch (e) {\n\t__pr = require('./probabilistic/index')\n}\n__pr.openModule(__pr);\n"
 
 /*
 Transform a string of code by the above two transformations
@@ -99,14 +100,24 @@ function probTransform(codeString)
 {
 	var ast = esprima.parse(codeString)
 	estraverse.replace(ast, callWrapper)
-	var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic/index')\n} catch (e) {\n\t__pr = require('./probabilistic/index')\n}\n__pr.openModule(__pr);\n" + "var enterfn = __pr.enterfn, leavefn = __pr.leavefn;\n"
     //+ "__pr.setmaxid(" + nextid + ");\n"
 	return preamble + escodegen.generate(ast)
+}
+
+/*
+Same as above, but takes an AST instead of a code string
+*/
+function probTransformAST(ast)
+{
+	estraverse.replace(ast, callWrapper)
+	ast["body"].unshift(esprima.parse(preamble))
+	return ast
 }
 
 
 module.exports =
 {
+	probTransformAST: probTransformAST,
 	probTransform: probTransform
 }
 
