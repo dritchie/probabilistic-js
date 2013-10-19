@@ -53,6 +53,10 @@ var callWrapper =
 			node.skip = true
 			wrapast.callee.body.body[2].expression.skip = true
 
+			// To preserve source map information 
+			wrapast.loc = node.loc
+			wrapast.callee.body.body[1].loc = node.loc
+
 			estraverse.replace(wrapast, replacer)
 
 			// OK, now we need to extract and evaluate any & all args to this call
@@ -77,10 +81,12 @@ var callWrapper =
 					[{
 						type: "VariableDeclarator",
 						id: {type: "Identifier", name: "arg"+i},
-						init: arg
+						init: arg,
+						loc: arg.loc
 					}],
-					kind: "var"
-				} 
+					kind: "var",
+					loc: arg.loc
+				}
 				node.arguments[i] = {type: "Identifier", name: "arg"+i}
 				wrapast.callee.body.body.splice(i, 0, decl)
 			}
