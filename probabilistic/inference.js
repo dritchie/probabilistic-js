@@ -110,11 +110,9 @@ function enumerateDist(computation) {
     
     //    initialize at start of domain for each ERP:
 	var currTrace = trace.newTrace(computation, "enumerate")
-    var name = "something"
-    while(name) {
-        currTrace.traceUpdate()
+    while(currTrace) {
         if (currTrace.conditionsSatisfied) {addElt(currTrace.returnValue, currTrace.logprob)}
-        name = currTrace.nextEnumState()
+        currTrace = currTrace.nextEnumState()
     }
     return dist
 }
@@ -443,6 +441,7 @@ function traceST(computation, numsamps, lag, verbose, init)
 /*
  Create conditional thunk.
  Options includes the algorithm and any algorithm-specific params.
+ FIXME: do we need to return a thunk or an ERP (that knows how to score itself)?
  FIXME: finish
 */
 

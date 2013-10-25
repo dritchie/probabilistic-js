@@ -66,12 +66,11 @@ function RandomExecutionTrace(computation, init)
 	} else if (init=="enumerate") {
         this.enumerate=true
         this.traceUpdate()
-        while (!this.conditionsSatisfied) {
-            var r = this.nextEnumState()
-            if (r == null) {this.reset()} //if we didn't find a satsfying state, reset.
-            this.traceUpdate()
-        }
         this.enumerate=false
+        while (!this.conditionsSatisfied) {
+            if (!this.nextEnumState()) //try going to next state.
+            {this.reset()} //if we didn't find a satsfying state, reset.
+        }
     } else if (init=="lessdumb") {
         //if(this.enumerate) throw error("how did enumerate get turned on?")
         this.traceUpdate()
@@ -83,12 +82,8 @@ function RandomExecutionTrace(computation, init)
                 //do more enumeration after every restart:
                 esteps += 10
             } else {
-                var r = this.nextEnumState()
-                if (r == null) {
-                    this.reset() //if we didn't find a satsfying state, reset.
-                } else {
-                    this.traceUpdate()
-                }
+                if (!this.nextEnumState()) //try going to next state.
+                {this.reset()} //if we didn't find a satsfying state, reset.
             }
             i += 1
         }
@@ -346,8 +341,9 @@ RandomExecutionTrace.prototype.nextEnumState = function nextEnumState() {
             v.logprob = v.erp.logprob(v.val, v.params)
         }
     }
+    this.traceUpdate()
     this.enumerate=false
-    return varname
+    return this
 }
 
 
