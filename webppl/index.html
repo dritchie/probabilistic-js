@@ -100,28 +100,32 @@ output(hist)
           var d1 = new Date()
           codestring = transform.probTransform(codestring)
           var d2 = new Date()
-//          var val = eval(codestring)
-//          var d3 = new Date()
-//          info("Compile time: " + (d2.getTime() - d1.getTime()) / 1000 +
-//               " Run time: " + (d3.getTime() - d2.getTime()) / 1000)
-//          info("Compiled code: \n\n" + codestring +"\n")
-
-//          var d2 = new Date()
-//          var val = prebake()
-//          var d3 = new Date()
-//          info(" Non-eval Run time: " + (d3.getTime() - d2.getTime()) / 1000)
-
-
-        $("body").append($("<script />", {
-                           html: "function compiled(){"+codestring+"}; val = compiled();"
-                   }))
-        var d3 = new Date()
-        info("Compile time: " + (d2.getTime() - d1.getTime()) / 1000 +
-             " Dynamic load run time: " + (d3.getTime() - d2.getTime()) / 1000)
-
+          info("Compile time: " + (d2.getTime() - d1.getTime()) / 1000)
           
+          var d1 = new Date()
+          var val = Function(codestring)()
+          var d2 = new Date()
+          info("Run time (Function wrap method): " + (d2.getTime() - d1.getTime()) / 1000)
 
-          val
+//        var d1 = new Date()
+//        var val = eval(codestring)
+//        var d2 = new Date()
+//        info("Direct eval run time: " + (d2.getTime() - d1.getTime()) / 1000)
+//
+//
+//        var d1 = new Date()
+//        $("body").append($("<script />", {
+//                           html: "function compiled(){"+codestring+"}; val = compiled();"
+//                   }))
+//        var d2 = new Date()
+//        info("Script inject run time: " + (d2.getTime() - d1.getTime()) / 1000)
+//
+//        var d1 = new Date()
+//        var val = (0,eval)(codestring)
+//        var d2 = new Date()
+//        info("Indirect eval run time: " + (d2.getTime() - d1.getTime()) / 1000)
+
+        val
         }
         catch (e)
         {

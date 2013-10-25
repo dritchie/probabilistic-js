@@ -75,19 +75,50 @@ function rejectionSample(computation)
 	return tr.returnValue
 }
 
-//same but return a bunch of samples in data structure that matches traceMH
-function bunchaRejectionSample(computation, numsamps)
-{
-    var samps = []
-    
-    for(i=0;i<numsamps;i++)
-    {
-        var tr = trace.newTrace(computation)
-        samps.push({sample: tr.returnValue, logprob: tr.logprob})
+////same but return a bunch of samples in data structure that matches traceMH
+//function bunchaRejectionSample(computation, numsamps)
+//{
+//    var samps = []
+//    
+//    for(i=0;i<numsamps;i++)
+//    {
+//        var tr = trace.newTrace(computation)
+//        samps.push({sample: tr.returnValue, logprob: tr.logprob})
+//    }
+//	
+//	return samps
+//}
+
+/*
+ Enumerate through random choices in the program.
+ Assumes:
+ all random choice have an iteration method that iterates over thier (finite) domain, returning special symbol when end of domain is reached.
+ random choice names are always returned in evauation order.
+ Returns a discrete distribution (the marginal on return values).
+ */
+function enumerateDist(computation) {
+    var dist = {}
+    function addElt(val, logprob) {
+        var stringrep = JSON.stringify(val)
+        if (!dist[stringrep]) {
+            dist[stringrep]={}
+            dist[stringrep].val = val
+            dist[stringrep].prob = 0
+        }
+        dist[stringrep].prob += Math.exp(logprob)
     }
-	
-	return samps
+    
+    //    initialize at start of domain for each ERP:
+	var currTrace = trace.newTrace(computation, "enumerate")
+    var name = "something"
+    while(name) {
+        currTrace.traceUpdate()
+        if (currTrace.conditionsSatisfied) {addElt(currTrace.returnValue, currTrace.logprob)}
+        name = currTrace.nextEnumState()
+    }
+    return dist
 }
+
 
 
 /*
@@ -114,7 +145,7 @@ RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 	*/
 	if (currNames.length==0)
 	{
-		currTrace.traceUpdate(!this.structural)
+		currTrace.traceUpdate()
 		return currTrace
 	}
 	/*
@@ -447,7 +478,8 @@ module.exports =
 	expectation: expectation,
 	MAP: MAP,
 	rejectionSample: rejectionSample,
-    bunchaRejectionSample: bunchaRejectionSample,
+    enumerateDist: enumerateDist,
+//    bunchaRejectionSample: bunchaRejectionSample,
 	traceMH: traceMH,
 	LARJMH: LARJMH,
     traceST: traceST
