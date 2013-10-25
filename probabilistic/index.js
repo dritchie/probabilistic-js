@@ -2,7 +2,6 @@ var trace = require("./trace")
 var erp = require("./erp")
 var control = require("./control")
 var inference = require("./inference")
-var enumerate = require("./enumerate")
 var memoize = require("./memoize")
 var marginalize = require("./marginalize")
 var transform = require("./transform")
@@ -24,10 +23,6 @@ for (var prop in control)
 // Forward inference exports
 for (var prop in inference)
 	module.exports[prop] = inference[prop]
-
-// Forward enumerate exports
-for (var prop in enumerate)
-module.exports[prop] = enumerate[prop]
 
 // Forward memoize exports
 for (var prop in memoize)
