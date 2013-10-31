@@ -11,6 +11,8 @@ The `-p` option, if present, will keep around the transformed `.js` code, which 
 
 Programs written in probabilistic-js can also be run in the browser via [browserify](https://github.com/substack/node-browserify). The `webppl` directory contains the framework for a simple example (using the excellent [CodeMirror](http://codemirror.net/) widget). Just use the command:
 
-	node node_modules/browserify/bin/cmd.js -r ./probabilistic/index > webppl/probabilistic.js
+	browserify -r ./probabilistic/index -r ./probabilistic/transform -r ./probabilistic/util > webppl/probabilistic.js
+
+Or if you don't have browserify set up with a command alias, call it with `node node_modules/browserify/bin/cmd.js`
 
 A running instance of this web demo can be found [here](http://graphics.stanford.edu/~dritchie/webppl).

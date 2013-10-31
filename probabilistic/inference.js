@@ -109,7 +109,11 @@ function enumerateDist(computation) {
     }
     
     //    initialize at start of domain for each ERP:
-	var currTrace = trace.newTrace(computation, "enumerate")
+	var currTrace = trace.newTrace(computation, false)
+    currTrace.enumerate=true
+    currTrace.traceUpdate()
+    currTrace.enumerate=false
+    //iterate through ERP vals:
     while(currTrace) {
         if (currTrace.conditionsSatisfied) {addElt(currTrace.returnValue, currTrace.logprob)}
         currTrace = currTrace.nextEnumState()
