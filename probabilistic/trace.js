@@ -45,19 +45,31 @@ Tracks the random choices made and accumulates probabilities.
 function RandomExecutionTrace(computation, init)
 {
 	init = (init == undefined ? "rejection" : init)
+    //the stochastic computation this trace captures:
 	this.computation = computation
-	this.vars = {}
-	this.varlist = []
+    //the records of random variables during execution. choices are either static (guaranteed to exist in every execution) or dynamic, and for the dynamic ones we have two data structures to track them -- a hash and an array, with the latter used for non-structural updates.
+	this.dynamicvars = {}
+	this.dynamicvarslist = []
+    this.staticvars = []
+    //the choice number for non-structural updates using the dynamicvarslist:
 	this.currVarIndex = 0
+    //loop counters for dynamic addressing:
+	this.loopcounters = {}
+    //do we know the sturcture will be fixed for the next/current update?
+    this.structureIsFixed = false
+    //Enumeration mode sets new ERP calls to start of domain:
+    this.enumerate = false
+
+    //the logprob, logprob due to new variables, and logprob of no longer reached variables:
 	this.logprob = 0.0
 	this.newlogprob = 0.0
 	this.oldlogprob = 0.0
-	this.loopcounters = {}
+    //are all conditions satsfied?
 	this.conditionsSatisfied = false
+    //the return value of the computation:
 	this.returnValue = null
-    this.structureIsFixed = false
-    this.enumerate = false //Enumeration mode sets new ERP calls to start of domain.
     
+    //we have several different methods for initializing a trace (if none then don't initialize):
 	if (init == "rejection") {
 		while (!this.conditionsSatisfied)
 		{
@@ -92,8 +104,9 @@ function RandomExecutionTrace(computation, init)
 
 RandomExecutionTrace.prototype.reset = function reset()
 {
-    this.vars = {}
-    this.varlist = []
+    this.dynamicvars = {}
+    this.dynamicvarslist = []
+    this.staticvars = []
     this.traceUpdate()
 }
 
@@ -107,34 +120,31 @@ RandomExecutionTrace.prototype.deepcopy = function deepcopy()
 	newdb.conditionsSatisfied = this.conditionsSatisfied
 	newdb.returnValue = this.returnValue
 
-	for (var i = 0; i < this.varlist.length; i++)
+	for (var i = 0; i < this.dynamicvarslist.length; i++)
 	{
 		var newvar = this.varlist[i].copy()
-		newdb.varlist.push(newvar)
-		newdb.vars[newvar.name] = newvar
+		newdb.dynamicvarslist.push(newvar)
+		newdb.dynamicvars[newvar.name] = newvar
 	}
+    for (var i = 0; i<this.staticvars.length; i++) {
+        newdb.staticvars.push(this.staticvars[i].copy())
+    }
 
 	return newdb
 }
 
-//RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(structural, nonstructural)
-//{
-//	structural = (structural == undefined ? true : structural)
-//	nonstructural = (nonstructural == undefined ? true : nonstructural)
-//	var names = []
-//	for (var i=0, rec; rec = this.varlist[i]; i++)
-//	{
-//		if ()
-//        {names.push(rec.name)}
-//    }
-//	return names
-//}
+
 RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(pred)
 {
 	pred = (pred == undefined ? function(r){return true} : pred)
 	var names = []
-	for (var i=0, rec; rec = this.varlist[i]; i++)
+	for (var i=0, rec; rec = this.dynamicvarslist[i]; i++)
 	{
+		if (!rec.conditioned && pred(rec)) {names.push(rec.name)}
+    }
+    for (var i=0; i<ths.staticvars.length; i++)
+	{
+        var rec = this.staticvars[i]
 		if (!rec.conditioned && pred(rec)) {names.push(rec.name)}
     }
 	return names
@@ -142,6 +152,7 @@ RandomExecutionTrace.prototype.freeVarNames = function freeVarNames(pred)
 
 /*
 Names of variables that this trace has that the other does not
+ FIXME:update
 */
 RandomExecutionTrace.prototype.varDiff = function varDiff(other)
 {
@@ -180,8 +191,10 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
 	var origtrace = trace
 	trace = this
 
+    //reset before recomputation:
 	this.logprob = 0.0
 	this.newlogprob = 0.0
+    this.oldlogprob = 0.0
 	this.loopcounters = {}
 	this.conditionsSatisfied = true
 	this.currVarIndex = 0
@@ -190,29 +203,25 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
 	// If updating this trace can change the variable structure, then we
 	// clear out the flat list of variables beforehand
 	if (!structureIsFixed) {
-        var oldvarlist = this.varlist
-        this.varlist=[]
+        var oldvarlist = this.dynamicvarslist
+        this.dynamicvarslist=[]
     }
     
 	// Run the computation, creating/looking up random variables
 	this.returnValue = this.computation()
-
-	// Clean up
-	this.loopcounters = {}
-
-    this.oldlogprob = 0.0
+    
     if (!structureIsFixed) {
         // Clear out any random values that are no longer reachable
         for(var i=0,rec; rec = oldvarlist[i]; i++) {
             if(!rec.active) {
                 this.oldlogprob += rec.logprob
-                delete this.vars[rec.name]
+                delete this.dynamicvars[rec.name]
             }
         }
     }
     
     //reset active record marks for next traceUpdate..
-    for(var i=0, v; v=this.varlist[i]; i++) {v.active = false}
+    for(var i=0, v; v=this.dynamicvarslist[i]; i++) {v.active = false}
     
 	// Reset the original singleton trace
 	trace = origtrace
@@ -245,19 +254,22 @@ Creates the variable if it does not already exist
 */
 RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructural, conditionedValue)
 {
-    var record = null
-    var name = null
-    
-    // If structure of this trace is fixed get variable from flatlist, otherwise do slower structural lookup
-    if (this.structureIsFixed) {
-        record = this.varlist[this.currVarIndex]
+    if (isStatic) {
+        return this.staticlookup(erp, params, isStructural, conditionedValue)
+    } else if (this.structureIsFixed) {
+        return this.flatlistlookup(erp, params, isStructural, conditionedValue)
     } else {
-        name = currentName(this)
-        record = this.vars[name]
-        if (!record || record.erp != erp || record.structural != isStructural) {record = null}
+        return this.dynamiclookup(erp, params, isStructural, conditionedValue)
     }
+}
+
+//
+RandomExecutionTrace.prototype.dynamiclookup = function dynamiclookup(erp, params, isStructural, conditionedValue) {
+    var name = currentName(this)
+    var record = this.vars[name]
+    if (!record || record.erp != erp || record.structural != isStructural) {record = null}
     
-	// If we didn't find the variable, create a new one
+    // If we didn't find the variable, create a new one:
 	if (!record)
 	{
         if (this.enumerate && typeof erp.nextVal === 'function') { // If we are doing ennumeration init new vars to first val in domain:
@@ -274,30 +286,67 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
 	// status have changed
 	else {
 		record.conditioned = (conditionedValue != undefined)
-		var hasChanges = false
-		if (!util.arrayEquals(record.params, params))
-		{
-			record.params = params
-			hasChanges = true
-		}
-		if (conditionedValue && conditionedValue != record.val)
-		{
-			record.val = conditionedValue
-			record.conditioned = true
-			hasChanges = true
-		}
-		if (hasChanges) {record.logprob = erp.logprob(record.val, record.params)}
+        if (this.ERPCallHasChanges(record, erp, params, conditionedValue)) {
+            record.logprob = erp.logprob(record.val, record.params)
+        }
     }
     
 	// Finish up and return
     this.currVarIndex++
     this.logprob += record.logprob
     record.active = true
-    if (!this.structureIsFixed){ this.varlist.push(record)}
+    this.varlist.push(record)
     return record.val
 }
 
+RandomExecutionTrace.prototype.flatlistlookup = function flatlistlookup(erp, params, isStructural, conditionedValue) {
+    var record = this.dynamicvarslist[this.currVarIndex]
+    record.conditioned = (conditionedValue != undefined)
+    if (this.ERPCallHasChanges(record, erp, params, conditionedValue)) {
+        record.logprob = erp.logprob(record.val, record.params)
+    }
+    // Finish up and return
+    this.currVarIndex++
+    this.logprob += record.logprob
+    record.active = true
+    return record.val
+}
+
+//when looking up a static variable, don't have to do many of the complex things for dynamic ones:
+RandomExecutionTrace.prototype.staticlookup = function staticlookup(erp, params, isStructural, conditionedValue, id) {
+    var record = this.staticvars[id]
+    record.conditioned = (conditionedValue != undefined)
+    if (this.ERPCallHasChanges(record, erp, params, conditionedValue)) {
+        record.logprob = erp.logprob(record.val, record.params)
+    }
+    
+    this.logprob += record.logprob
+    return record.val
+}
+
+//check if any params have changed.
+//FIXME: check erp for change?
+RandomExecutionTrace.prototype.ERPCallHasChanges(record, erp, params, conditionedValue) {
+    var hasChanges = false
+    if (!util.arrayEquals(record.params, params))
+    {
+        record.params = params
+        hasChanges = true
+    }
+    if (conditionedValue && conditionedValue != record.val)
+    {
+        record.val = conditionedValue
+        record.conditioned = true
+        hasChanges = true
+    }
+    return hasChanges
+}
+
+
+
+
 // Simply retrieve the variable record associated with 'name'
+//FIXME
 RandomExecutionTrace.prototype.getRecord = function getRecord(name)
 {
 	return this.vars[name]
@@ -317,6 +366,7 @@ RandomExecutionTrace.prototype.conditionOn = function conditionOn(boolexpr)
 
 
 //Next state for enumeration:
+//FIXME
 RandomExecutionTrace.prototype.nextEnumState = function nextEnumState() {
     this.enumerate=true
     var names = this.freeVarNames()
