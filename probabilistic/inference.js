@@ -67,11 +67,17 @@ function MAP(computation, samplingFn)
 /*
 Rejection sample a result from computation that satisfies all
 conditioning expressions.
-Note: doesn't work when there are conditionedValue ERPs
+Note: doesn't work if the desired log probability is higher than the
+probability of generating the state by running the program forwards
+(such as with a factor statement)
 */
 function rejectionSample(computation)
 {
 	var tr = trace.newTrace(computation)
+	while (Math.log(Math.random()) > tr.logprob - tr.genlogprob) {
+		tr = trace.newTrace(computation)
+	}
+
 	return tr.returnValue
 }
 

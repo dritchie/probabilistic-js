@@ -182,6 +182,7 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
 
 	this.logprob = 0.0
 	this.newlogprob = 0.0
+	this.genlogprob = 0.0
 	this.loopcounters = {}
 	this.conditionsSatisfied = true
 	this.currVarIndex = 0
@@ -263,10 +264,11 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
         if (this.enumerate && typeof erp.nextVal === 'function') { // If we are doing ennumeration init new vars to first val in domain:
             var val = erp.nextVal(null, params)
         } else {
-            var val = conditionedValue || erp.sample_impl(params)
+            var val = (conditionedValue == undefined) ? erp.sample_impl(params) : conditionedValue
         }
 		var ll = erp.logprob(val, params)
 		this.newlogprob += ll
+		if (conditionedValue == undefined) this.genlogprob += ll
 		record = new RandomVariableRecord(name, erp, params, val, ll, isStructural, conditionedValue !== undefined)
 		this.vars[name] = record
 	}
