@@ -385,7 +385,7 @@ function binomial_sample(p,n)
         if(u<p) k++;
     }
 
-    return k;
+    return k | 0;
 }
 
 function g(x)
@@ -446,17 +446,24 @@ function poisson_sample(mu)
     while(mu > 10)
     {
         var m = 7/8*mu;
-        var x = gamma_sample(m);
+        var x = gamma_sample(m, 1);
 
-        if(x > mu) return k + binomial_sample(mu/x, m-1);
-        else{ mu -= x; k += m; }
+        if (x > mu)
+        {
+        	return (k + binomial_sample(mu/x, m-1)) | 0;
+        }
+        else
+        {
+        	mu -= x;
+        	k += m;
+        }
     }
 
     var emu = Math.exp(-mu);
     var p = 1;
     do{ p *= Math.random(); k++; } while(p > emu);
 
-    return k-1;
+    return (k-1) | 0;
 }
 
 function fact(x)
