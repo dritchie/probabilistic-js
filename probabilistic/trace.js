@@ -255,8 +255,20 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
     } else {
         name = currentName(this)
         record = this.vars[name]
-        if (!record || record.erp != erp || record.structural != isStructural) {record = null}
-    }
+        if (record) {
+          if (record.erp !== erp) {
+            record = null
+          } else {
+            if ( record.structural !== isStructural || 
+                 // if this ERP compares supports but we fail the
+                 // comparison, say that there's no record
+                 (erp.compareSupport && !erp.compareSupport(params, record.params))
+               ) {
+              record = null;
+            } 
+          } 
+        } 
+    } 
     
 	// If we didn't find the variable, create a new one
 	if (!record)

@@ -34,12 +34,33 @@ RandomPrimitive.prototype.logProposalProb = function ERP_logProposalProb(currval
 	return this.logprob(propval, params)
 }
 
-//NOTE nextVal shuld be implemented by enurmerable ERPs. no default implementation to allow testing for existence.
-//RandomPrimitive.prototype.nextVal = function ERP_nextVal(currval)
-//{
+// NOTE nextVal should be implemented by enumerable ERPs. no default implementation to allow testing for existence.
+// RandomPrimitive.prototype.nextVal = function ERP_nextVal(currval)
+// {
 //    // When currval is null, start at beginning of domain when last val passed, return null.
-//	throw new Error("ERP subclasses must implement nextVal for domain enumeration!")
-//}
+// 	throw new Error("ERP subclasses must implement nextVal for domain enumeration!")
+// }
+
+// NOTE
+// ERPs whose supports change depending on parameters (e.g., uniform, multinomial)
+// can optionally implement the compareSupport function. this is handy
+// for making sure inference doesn't result in invalid traces
+// for example, in the model:
+//
+// a ~ Uniform(0,1)
+// b ~ Uniform(0,a)
+// ...
+//
+// the vanilla MH implementation will entertain proposals that make
+// b > a; if the remainder of the model results in an error for b > a
+// then we're in trouble; inference can't proceed. by declaring
+// compareSupport(), we catch this problem earlier (inside of
+// RandomExecutionTrace.prototype.lookup), avoiding model code
+// errors
+
+// RandomPrimitive.prototype.compareSupport = function ERP_compareSupport(params) {
+//   ...
+// }
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,6 +156,10 @@ function multinomial_logprob(n, theta)
 	return Math.log(theta[n]/thetasum)
 }
 
+MultinomialRandomPrimitive.prototype.compareSupport = function Multinomial_compareSupport(params1, params2) {
+  return (params1.length == params2.length)
+}
+
 MultinomialRandomPrimitive.prototype.sample_impl = function Multinomial_sample_impl(params)
 {
 	return multinomial_sample(params)
@@ -209,6 +234,11 @@ var uniformDraw = function uniformDraw(items, isStructural)
 function UniformRandomPrimitive() {}
 UniformRandomPrimitive.prototype = Object.create(RandomPrimitive.prototype)
 
+
+UniformRandomPrimitive.prototype.compareSupport = function Uniform_compareSupport(params1, params2) {
+  return params1[0] == params2[0] && params1[1] == params2[1];
+}
+
 UniformRandomPrimitive.prototype.sample_impl = function Uniform_sample_impl(params)
 {
 	var u = Math.random()
@@ -223,7 +253,7 @@ UniformRandomPrimitive.prototype.logprob = function Uniform_logprob(val, params)
 }
 
 var uniformInst = new UniformRandomPrimitive()
-var uniform = function uniform(lo, hi, isStructural, conditionedValue)
+var uniform = function(lo, hi, isStructural, conditionedValue)
 {
 	return uniformInst.sample([lo, hi], isStructural, conditionedValue) + 0
 }
