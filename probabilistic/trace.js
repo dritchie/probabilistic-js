@@ -337,12 +337,17 @@ RandomExecutionTrace.prototype.nextEnumState = function nextEnumState() {
     
     var newval = null
     while (newval == null) {
+      
         // if we are out of names it means we're done enumerating with no satisfying execution, return null.
         if (names.length == 0) {this.enumerate=false; return null}
         
         //otherwise get next var:
         var varname = names.pop()
         var v = this.getRecord(varname)
+
+      if (!v) {
+        continue
+      }
         
         //if the domain is enumerable, go to next value:
         if (typeof v.erp.nextVal === 'function') {
