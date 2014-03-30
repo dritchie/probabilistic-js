@@ -215,17 +215,17 @@ var multinomial = function multinomial(theta, isStructural, conditionedValue)
 	return multinomialInst.sample(theta, isStructural, conditionedValue) + 0
 }
 
-var multinomialDraw = function multinomialDraw(items, probs, isStructural)
+var multinomialDraw = function multinomialDraw(items, probs, isStructural, conditionedValue)
 {
-	return items[multinomial(probs, isStructural)]
+	return items[multinomial(probs, isStructural, conditionedValue)]
 }
 
-var uniformDraw = function uniformDraw(items, isStructural)
+var uniformDraw = function uniformDraw(items, isStructural, conditionedValue)
 {
 	var probs = []
 	for (var i = 0; i < items.length; i++)
 		probs[i] = 1/items.length
-	return items[multinomial(probs, isStructural)]
+	return items[multinomial(probs, isStructural, conditionedValue)]
 }
 
 ///////////////////////////////////////////////////////////////////////////////
