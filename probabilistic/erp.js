@@ -91,27 +91,13 @@ FlipRandomPrimitive.prototype.logProposalProb = function Flip_logProposalProb(cu
 
 FlipRandomPrimitive.prototype.nextVal = function Flip_nextVal(currval, params)
 {
-  if (params[0] == 0) {
-    if (currval == null) {
-      return 0;
-    } else {
-      return null;
-    } 
-  } else if (params[0] == 1) {
-    if (currval == null) {
-      return 1;
-    } else {
-      return null;
-    }
-  } else {
-    if (currval == null) {
-      return 0;
-    } else if (currval == 0) {
-      return 1
-    } else {
-      return null;
-    }
-  }   
+
+  if (currval == null) {
+    return 0;
+  } else if (currval === 0) {
+    return 1
+  }
+  return null;
 };
 
 var flipInst = new FlipRandomPrimitive()
@@ -190,23 +176,14 @@ MultinomialRandomPrimitive.prototype.logProposalProb = function Multinomial_logP
 // until we find one that doesn't
 MultinomialRandomPrimitive.prototype.nextVal = function Multinomial_nextVal(currval, params)
 {
-  
-  var index;
+
   if (currval == null) {
-    index = 0;
-  } else {
-    index = currval + 1;
+    return 0
+  } else if (currval < params.length-1) {
+    return currval+1
   }
-  
-  while(params[index] === 0 ) {
-    index++;
-  }
+  return null
 
-  if (index >= params.length) {
-    return null;
-  }
-
-  return index;
 }
 
 var multinomialInst = new MultinomialRandomPrimitive()

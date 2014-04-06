@@ -75,7 +75,7 @@ function RandomExecutionTrace(computation, init)
         //if(this.enumerate) throw error("how did enumerate get turned on?")
         this.traceUpdate()
         var i=1, esteps=1
-        while (!this.conditionsSatisfied) {
+        while (!this.conditionsSatisfied || this.logprob === -Infinity) {
             if(i%esteps == 0) {
                 //reset and initialize randomly:
                 this.reset()
