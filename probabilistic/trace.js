@@ -347,10 +347,6 @@ RandomExecutionTrace.prototype.nextEnumState = function nextEnumState() {
         //otherwise get next var:
         var varname = names.pop()
         var v = this.getRecord(varname)
-
-      if (!v) {
-        continue
-      }
         
         //if the domain is enumerable, go to next value:
         if (typeof v.erp.nextVal === 'function') {
