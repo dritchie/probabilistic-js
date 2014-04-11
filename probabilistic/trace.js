@@ -201,19 +201,22 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
 	// Clean up
 	this.loopcounters = {}
 
-    this.oldlogprob = 0.0
-    if (!structureIsFixed) {
-        // Clear out any random values that are no longer reachable
-        for(var i=0,rec; rec = oldvarlist[i]; i++) {
-            if(!rec.active) {
-                this.oldlogprob += rec.logprob
-                delete this.vars[rec.name]
-            }
-        }
+  this.oldlogprob = 0.0
+  if (!structureIsFixed) {
+    // Clear out any old random values that are no longer reachable
+    for(var i=0,rec; rec = oldvarlist[i]; i++) {
+      // before checking to see if the old random value is active,
+      // make sure that it was not supplanted by a new value
+      // (e.g., change of support)
+      if( this.vars[rec.name] == rec && !rec.active) {
+        this.oldlogprob += rec.logprob
+        delete this.vars[rec.name]
+      }
     }
+  } 
     
-    //reset active record marks for next traceUpdate..
-    for(var i=0, v; v=this.varlist[i]; i++) {v.active = false}
+   //reset active record marks for next traceUpdate..
+   for(var i=0, v; v=this.varlist[i]; i++) {v.active = false}
     
 	// Reset the original singleton trace
 	trace = origtrace
