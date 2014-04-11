@@ -12,7 +12,7 @@ function currentName(trace){
     var id = idstack[idstack.length-1]
     var loopnum = trace.loopcounters[id] || 0
     trace.loopcounters[id] = loopnum + 1
-	return id + ":" + loopnum
+	return id + "." + loopnum
 }
 
 
