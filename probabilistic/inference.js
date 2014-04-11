@@ -95,6 +95,27 @@ function rejectionSample(computation)
 //	return samps
 //}
 
+// HT https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+function kahanSum(nums) {
+  var sum = 0.0;
+  var c = 0.0;  // A running compensation for lost low-order bits.
+  for(var i = 0, ii = nums.length; i < ii; i++) {
+    var y = nums[i] - c; // Subtract off compensation
+    var t = sum + y; // make temp variable for new sum
+    c = (t - sum) - y; // update compensation.
+    sum = t
+  }
+  return sum;
+}
+
+function normalSum(nums) {
+  var res = 0;
+  for(var i = 0, ii = nums.length; i < ii; i++) {
+    res += nums[i] 
+  }
+  return res;
+}
+
 /*
  Enumerate through random choices in the program.
  Assumes:
@@ -109,22 +130,27 @@ function enumerateDist(computation) {
         if (!dist[stringrep]) {
             dist[stringrep]={}
             dist[stringrep].val = val
-            dist[stringrep].prob = 0
+            dist[stringrep].prob = []
         }
-        dist[stringrep].prob += Math.exp(logprob)
+        dist[stringrep].prob.push( Math.exp(logprob) )
     }
     
     //    initialize at start of domain for each ERP:
 	var currTrace = trace.newTrace(computation, false)
-    currTrace.enumerate=true
-    currTrace.traceUpdate()
-    currTrace.enumerate=false
-    //iterate through ERP vals:
-    while(currTrace) {
-        if (currTrace.conditionsSatisfied) {addElt(currTrace.returnValue, currTrace.logprob)}
-        currTrace = currTrace.nextEnumState()
-    }
-    return dist
+  currTrace.enumerate=true
+  currTrace.traceUpdate()
+  currTrace.enumerate=false
+  //iterate through ERP vals:
+  while(currTrace) {
+    if (currTrace.conditionsSatisfied) {addElt(currTrace.returnValue, currTrace.logprob)}
+    currTrace = currTrace.nextEnumState()
+  }
+
+  for(var item in dist) {
+    dist[item].prob = kahanSum(dist[item].prob);
+  }
+
+  return dist
 }
 
 
