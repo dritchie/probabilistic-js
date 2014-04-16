@@ -357,9 +357,10 @@ RandomExecutionTrace.prototype.nextEnumState = function nextEnumState() {
                 v.val = newval
             }
             v.logprob = v.erp.logprob(v.val, v.params)
-        } else {
-        	throw new Error("Cannot enumerate on a continuous-valed ERP")
-        }
+        } 
+       	// else {
+        // 	throw new Error("Cannot enumerate on a continuous-valed ERP")
+        // }
     }
     this.traceUpdate()
     this.enumerate=false
