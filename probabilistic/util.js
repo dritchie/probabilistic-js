@@ -1,11 +1,13 @@
 
-function openModule(mod)
+function openModule(mod, prefix)
 {
+        // '.' in scheme tranforms to '_46' in js
+        prefix = typeof prefix === 'undefined' ? "" : prefix + "_46";
 	for (var prop in mod)
 	{
 		if (mod.hasOwnProperty(prop))
 		{
-			global[prop] = mod[prop]
+			global[prefix+prop] = mod[prop]
 		}
 	}
 }
@@ -54,7 +56,7 @@ function keys(obj)
 	return a
 }
 
-module.exports = 
+module.exports =
 {
 	openModule: openModule,
 	arrayEquals: arrayEquals,
