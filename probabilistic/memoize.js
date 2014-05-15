@@ -5,6 +5,9 @@ Wrapper around a function to memoize its results
 */
 function mem(fn)
 {
+    if (typeof fn !== 'function' ) {
+        throw new Error('mem requires a function')
+    }
 	var cache = {}
 	return function()
 	{
