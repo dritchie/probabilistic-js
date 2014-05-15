@@ -100,10 +100,10 @@ function kahanSum(nums) {
   var sum = 0.0;
   var c = 0.0;  // A running compensation for lost low-order bits.
   for(var i = 0, ii = nums.length; i < ii; i++) {
-    var y = nums[i] - c; // Subtract off compensation
-    var t = sum + y; // make temp variable for new sum
-    c = (t - sum) - y; // update compensation.
-    sum = t
+	var y = nums[i] - c; // Subtract off compensation
+	var t = sum + y; // make temp variable for new sum
+	c = (t - sum) - y; // update compensation.
+	sum = t
   }
   return sum;
 }
@@ -111,7 +111,7 @@ function kahanSum(nums) {
 function normalSum(nums) {
   var res = 0;
   for(var i = 0, ii = nums.length; i < ii; i++) {
-    res += nums[i] 
+	res += nums[i] 
   }
   return res;
 }
@@ -124,30 +124,30 @@ function normalSum(nums) {
  Returns a discrete distribution (the marginal on return values).
  */
 function enumerateDist(computation) {
-    var dist = {}
-    function addElt(val, logprob) {
-        var stringrep = JSON.stringify(val)
-        if (!dist[stringrep]) {
-            dist[stringrep]={}
-            dist[stringrep].val = val
-            dist[stringrep].prob = []
-        }
-        dist[stringrep].prob.push( Math.exp(logprob) )
-    }
-    
-    //    initialize at start of domain for each ERP:
+	var dist = {}
+	function addElt(val, logprob) {
+		var stringrep = JSON.stringify(val)
+		if (!dist[stringrep]) {
+			dist[stringrep]={}
+			dist[stringrep].val = val
+			dist[stringrep].prob = []
+		}
+		dist[stringrep].prob.push( Math.exp(logprob) )
+	}
+	
+	//    initialize at start of domain for each ERP:
 	var currTrace = trace.newTrace(computation, false)
   currTrace.enumerate=true
   currTrace.traceUpdate()
   currTrace.enumerate=false
   //iterate through ERP vals:
   while(currTrace) {
-    if (currTrace.conditionsSatisfied) {addElt(currTrace.returnValue, currTrace.logprob)}
-    currTrace = currTrace.nextEnumState()
+	if (currTrace.conditionsSatisfied) {addElt(currTrace.returnValue, currTrace.logprob)}
+	currTrace = currTrace.nextEnumState()
   }
 
   for(var item in dist) {
-    dist[item].prob = kahanSum(dist[item].prob);
+	dist[item].prob = kahanSum(dist[item].prob);
   }
 
   return dist
@@ -161,7 +161,7 @@ single variable at a time
 */
 function RandomWalkKernel(pred)
 {
-    this.pred = pred
+	this.pred = pred
 	this.proposalsMade = 0
 	this.proposalsAccepted = 0
 }
@@ -169,9 +169,9 @@ function RandomWalkKernel(pred)
 RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 {
 	this.proposalsMade += 1
-    
-    var currNames = currTrace.freeVarNames(this.pred)
-    
+	
+	var currNames = currTrace.freeVarNames(this.pred)
+	
 	/*
 	If we have no free random variables, then just run the computation
 	and generate another sample (this may not actually be deterministic,
@@ -188,7 +188,7 @@ RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 	*/
 	else
 	{
-        var name = util.randomChoice(currNames)
+		var name = util.randomChoice(currNames)
 		var retval = currTrace.proposeChange(name)
 		var nextTrace = retval[0]
 		var fwdPropLP = retval[1] - Math.log(currNames.length)
@@ -200,7 +200,7 @@ RandomWalkKernel.prototype.next = function RandomWalk_next(currTrace)
 			return nextTrace
 		}
 	}
-    return currTrace //if we haven't accepted, return currTrace
+	return currTrace //if we haven't accepted, return currTrace
 }
 
 RandomWalkKernel.prototype.stats = function RandomWalk_stats()
@@ -293,9 +293,9 @@ function LARJKernel(diffusionKernel, annealSteps, jumpFreq)
 	this.diffusionProposalsAccepted = 0
 	this.annealingProposalsMade = 0
 	this.annealingProposalsAccepted = 0
-    
-    this.isStructural = function pred(rec){return rec.structural}
-    this.isNotStructural = function pred(rec){return !rec.structural}
+	
+	this.isStructural = function pred(rec){return rec.structural}
+	this.isNotStructural = function pred(rec){return !rec.structural}
 
 }
 
@@ -350,8 +350,8 @@ LARJKernel.prototype.jumpStep = function LARJKernel_jumpStep(currTrace)
 	// doing more than zero annealing steps
 	var annealingLpRatio = 0
 	if ((oldStructTrace.freeVarNames(this.isNotStructural).length
-         + newStructTrace.freeVarNames(this.isNotStructural).length) !== 0
-        && this.annealSteps > 0)
+		 + newStructTrace.freeVarNames(this.isNotStructural).length) !== 0
+		&& this.annealSteps > 0)
 	{
 		var lerpTrace = new LARJInterpolationTrace(oldStructTrace, newStructTrace)
 		var prevAccepted = this.diffusionKernel.proposalsAccepted
@@ -403,6 +403,18 @@ LARJKernel.prototype.stats = function LARJKernel_stats()
 		" (" + overallProposalsAccepted + "/" + overallProposalsMade + ")")
 }
 
+function mcmc_thunk(computation, kernel, lag, verbose, init) {
+	lag = (lag === undefined ? 1 : lag)
+	init = (init == undefined ? "rejection" : init)
+	kernel = (kernel == undefined ? new RandomWalkKernel() : kernel)
+	var currentTrace = trace.newTrace(computation, init)
+	return function() {
+		for (var i = 0; i < lag; i++) {
+			currentTrace = kernel.next(currentTrace);
+		}
+		return currentTrace.returnValue;
+	}
+}
 
 /*
 Do MCMC for 'numsamps' iterations using a given transition kernel
@@ -410,7 +422,7 @@ Do MCMC for 'numsamps' iterations using a given transition kernel
 function mcmc(computation, kernel, numsamps, lag, verbose, init)
 {
 	lag = (lag === undefined ? 1 : lag)
-    init = (init == undefined ? "rejection" : init)
+	init = (init == undefined ? "rejection" : init)
 	var currentTrace = trace.newTrace(computation, init)
 	var samps = []
 	var iters = numsamps*lag
@@ -429,8 +441,8 @@ function mcmc(computation, kernel, numsamps, lag, verbose, init)
  Mixture kernel
  */
 function mixKernel(k1,k2) { //FIXME: variable number, variable weights
-    this.k1=k1
-    this.k2=k2
+	this.k1=k1
+	this.k2=k2
 }
 
 mixKernel.prototype.next = function(trace){return Math.random()>0.5?this.k1.next(trace):this.k2.next(trace)}
@@ -467,9 +479,9 @@ function LARJMH(computation, numsamps, annealSteps, jumpFreq, lag, verbose)
 function traceST(computation, numsamps, lag, verbose, init)
 {
 	lag = (lag === undefined ? 1 : lag)
-    //make MH proposals to structural or non-enumerable ERPs:
-    var rwkernel = new RandomWalkKernel(function(rec){return rec.structural || (typeof rec.erp.nextVal != 'function')})
-    var kernel = new mixKernel(new STKernel.STKernel(), rwkernel)
+	//make MH proposals to structural or non-enumerable ERPs:
+	var rwkernel = new RandomWalkKernel(function(rec){return rec.structural || (typeof rec.erp.nextVal != 'function')})
+	var kernel = new mixKernel(new STKernel.STKernel(), rwkernel)
 	return mcmc(computation, kernel, numsamps, lag, verbose, init)
 }
 
@@ -482,26 +494,41 @@ function traceST(computation, numsamps, lag, verbose, init)
 */
 
 function conditional(computation, options) {
-    switch (options.algorithm) {
-        case "traceMH":
-            
-            break
-            
-        case "traceST":
-            
-            break
-            
-        case "LARJMH":
-            
-            break
-            
-        default: //rejection
-            return function() {
-                return rejectionSample(computation)
-            }
-            
-    }
-    
+	switch (options.algorithm) {
+		case "traceMH":
+			
+			return mcmc_thunk(computation, new RandomWalkKernel(), options.lag, options.verbose, options.init)
+			
+		case "traceST":
+			var rwkernel = new RandomWalkKernel(function(rec){return rec.structural || (typeof rec.erp.nextVal != 'function')})
+			var kernel = new mixKernel(new STKernel.STKernel(), rwkernel)
+			return mcmc_thunk(computation, kernel, options.lag, options.verbose, options.init)
+			
+		case "LARJMH":
+			
+			return mcmc_thunk(computation,
+				new LARJKernel(new RandomWalkKernel(function(rec){return !rec.structural}), annealSteps, jumpFreq),
+				options.lag, options.verbose)
+			
+		case "enumerate":
+			var items = []
+			var probs = []
+			var enumeration = enumerateDist(computation)
+			for (key in enumeration) {
+				items.push(enumeration[key].val)
+				probs.push(enumeration[key].prob)
+			}
+			return function() {
+				return items[util.discreteChoice(probs)];
+			}
+
+		default: //rejection
+			return function() {
+				return rejectionSample(computation)
+			}
+			
+	}
+	
 }
 
 
@@ -513,9 +540,11 @@ module.exports =
 	expectation: expectation,
 	MAP: MAP,
 	rejectionSample: rejectionSample,
-    enumerateDist: enumerateDist,
+	enumerateDist: enumerateDist,
 //    bunchaRejectionSample: bunchaRejectionSample,
+	mcmc_thunk: mcmc_thunk,
 	traceMH: traceMH,
 	LARJMH: LARJMH,
-    traceST: traceST
+	traceST: traceST,
+	conditional: conditional
 }
