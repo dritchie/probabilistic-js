@@ -1,7 +1,7 @@
 probabilistic-js
 ================
 
-Turning Javascript into a probabilistic programming language, following the approach presented in [this paper](http://www.stanford.edu/~ngoodman/papers/WSG-AIStats11.pdf) and [this talk](http://videolectures.net/aistats2011_wingate_lightweight/).
+Turning Javascript into a probabilistic programming language, following the approach presented in [this paper](http://www.stanford.edu/~ngoodman/papers/lightweight-mcmc-aistats2011.pdf) and [this talk](http://videolectures.net/aistats2011_wingate_lightweight/).
 
 probabilistic-js works via _source code transformation_: you write probabilistic code in `.pjs` files which are transformed into plain-old deterministic Javascript in `.js` files before being executed. For example:
 
