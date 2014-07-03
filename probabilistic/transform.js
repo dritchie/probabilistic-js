@@ -16,8 +16,7 @@ if (!String.prototype.format) {
   };
 }
 
-//var replcode = "(function() {__pr.enterfn({0}); var ret = __p_REPLACEME_p__; __pr.leavefn(); return ret; })()"
-var replcode = "(function() {enterfn({0}); var ret = __p_REPLACEME_p__; leavefn(); return ret; })()"
+var replcode = "(function() {enterfn({0}); var ret = __p_REPLACEME_p__; leavefn(); return ret; }).apply(this)"
 
 
 function makeWrappedCallReplacer(callNode)
@@ -49,13 +48,13 @@ var callWrapper =
 			nextid++
 
 			// We do NOT wrap the calls to enterfn, the fn itself, or leavefn
-			wrapast.callee.body.body[0].expression.skip = true
+			wrapast.callee.object.body.body[0].expression.skip = true
 			node.skip = true
-			wrapast.callee.body.body[2].expression.skip = true
+			wrapast.callee.object.body.body[2].expression.skip = true
 
 			// To preserve source map information 
 			wrapast.loc = node.loc
-			wrapast.callee.body.body[1].loc = node.callee.loc
+			wrapast.callee.object.body.body[1].loc = node.callee.loc
 
 			estraverse.replace(wrapast, replacer)
 
@@ -65,12 +64,6 @@ var callWrapper =
 			// For example, if we have a function call as one of the args, then this call
 			//   will see the id of the outer function call on the stack, which does not reflect
 			//   the execution structure of the original program.
-			var vardecls =
-			{
-				type: "VariableDeclaration",
-				declarations: [],
-				kind: "var"
-			}
 			for (var i = 0; i < node.arguments.length; i++)
 			{
 				var arg = node.arguments[i]
@@ -88,7 +81,7 @@ var callWrapper =
 					loc: arg.loc
 				}
 				node.arguments[i] = {type: "Identifier", name: "arg"+i}
-				wrapast.callee.body.body.splice(i, 0, decl)
+				wrapast.callee.object.body.body.splice(i, 0, decl)
 			}
 
 			return wrapast
