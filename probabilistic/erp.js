@@ -295,8 +295,8 @@ var gaussian = function gaussian(mu, sigma, isStructural, conditionedValue)
 ///////////////////////////////////////////////////////////////////////////////
 
 
-function GammaRandomPrimtive() {}
-GammaRandomPrimtive.prototype = Object.create(RandomPrimitive.prototype)
+function GammaRandomPrimitive() {}
+GammaRandomPrimitive.prototype = Object.create(RandomPrimitive.prototype)
 
 function gamma_sample(a,b)
 {
@@ -332,17 +332,17 @@ function gamma_logprob(x,a,b)
     return (a - 1)*Math.log(x) - x/b - log_gamma(a) - a*Math.log(b);
 }
 
-GammaRandomPrimtive.prototype.sample_impl = function Gamma_sample_impl(params)
+GammaRandomPrimitive.prototype.sample_impl = function Gamma_sample_impl(params)
 {
 	return gamma_sample(params[0], params[1])
 }
 
-GammaRandomPrimtive.prototype.logprob = function Gamma_logprob(val, params)
+GammaRandomPrimitive.prototype.logprob = function Gamma_logprob(val, params)
 {
 	return gamma_logprob(val, params[0], params[1])
 }
 
-var gammaInst = new GammaRandomPrimtive()
+var gammaInst = new GammaRandomPrimitive()
 var gamma = function gamma(a, b, isStructural, conditionedValue)
 {
 	return gammaInst.sample([a, b], isStructural, conditionedValue) + 0
