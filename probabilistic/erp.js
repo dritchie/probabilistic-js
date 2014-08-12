@@ -351,6 +351,42 @@ var gamma = function gamma(a, b, isStructural, conditionedValue)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+function ExponentialRandomPrimitive() {}
+ExponentialRandomPrimitive.prototype = Object.create(RandomPrimitive.prototype)
+
+// We can just generate from a uniform on the unit interval,
+// take its log, and divide by the negative of the rate 
+// HT http://en.wikipedia.org/wiki/Exponential_distribution#Generating_exponential_variates
+function exponential_sample(a) {
+	  var u = Math.random();
+    return Math.log(u) / (-1 * a);
+}
+
+ExponentialRandomPrimitive.prototype.sample_impl = function Exponential_sample_impl(params)
+{
+	  return exponential_sample(params[0])
+}
+
+function exponential_logprob(val, a) {
+    return Math.log(a) - a * val;
+}
+
+ExponentialRandomPrimitive.prototype.logprob = function Exponential_logprob(val, params)
+{
+	  return exponential_logprob(val, params[0])
+}
+
+var exponentialInst = new ExponentialRandomPrimitive()
+
+var exponential = function exponential(a, isStructural, conditionedValue)
+{
+	  return exponentialInst.sample([a], isStructural, conditionedValue) + 0
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+
 
 function BetaRandomPrimitive() {}
 BetaRandomPrimitive.prototype = Object.create(RandomPrimitive.prototype)
@@ -625,5 +661,7 @@ module.exports =
 	poisson_logprob: poisson_logprob,
 	poisson: poisson,
 	dirichlet_logprob: dirichlet_logprob,
-	dirichlet: dirichlet
+	dirichlet: dirichlet,
+  exponential: exponential,
+  exponential_logprob: exponential_logprob
 }
