@@ -334,7 +334,7 @@ RandomExecutionTrace.prototype.conditionOn = function conditionOn(boolexpr)
 
 
 //Next state for enumeration:
-RandomExecutionTrace.prototype.nextEnumState = function nextEnumState() {
+RandomExecutionTrace.prototype.nextEnumState = function nextEnumState(strict) {
     this.enumerate=true
     var names = this.freeVarNames()
     
@@ -357,10 +357,9 @@ RandomExecutionTrace.prototype.nextEnumState = function nextEnumState() {
                 v.val = newval
             }
             v.logprob = v.erp.logprob(v.val, v.params)
-        } 
-       	// else {
-        // 	throw new Error("Cannot enumerate on a continuous-valed ERP")
-        // }
+        } else if (strict) {
+        	throw new Error("Cannot enumerate over continuous values")
+        }
     }
     this.traceUpdate()
     this.enumerate=false

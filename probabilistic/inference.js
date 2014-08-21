@@ -143,7 +143,7 @@ function enumerateDist(computation) {
   //iterate through ERP vals:
   while(currTrace) {
 	if (currTrace.conditionsSatisfied) {addElt(currTrace.returnValue, currTrace.logprob)}
-	currTrace = currTrace.nextEnumState()
+	currTrace = currTrace.nextEnumState(true)
   }
 
   for(var item in dist) {
