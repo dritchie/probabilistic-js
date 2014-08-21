@@ -15,4 +15,4 @@ Programs written in probabilistic-js can also be run in the browser via [browser
 
 Or if you don't have browserify set up with a command alias, call it with `node node_modules/browserify/bin/cmd.js`
 
-A running instance of this web demo can be found [here](http://graphics.stanford.edu/~dritchie/webppl).
+A running instance of this web demo can be found [here](http://stanford.edu/~dritchie/webppl).
