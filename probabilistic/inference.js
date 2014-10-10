@@ -426,6 +426,7 @@ function mcmc(computation, kernel, numsamps, lag, verbose, init)
 	var currentTrace = trace.newTrace(computation, init)
 	var samps = []
 	var iters = numsamps*lag
+	var t0 = new Date().getTime()
 	for (var i = 0; i < iters; i++)
 	{
 		currentTrace = kernel.next(currentTrace)
@@ -433,7 +434,12 @@ function mcmc(computation, kernel, numsamps, lag, verbose, init)
 			samps.push({sample: currentTrace.returnValue, logprob: currentTrace.logprob})
 	}
 	if (verbose)
+	{
 		kernel.stats()
+		var t1 = new Date().getTime()
+		var tsecs = (t1-t0)/1000
+		console.log("Time: ", tsecs)
+	}
 	return samps
 }
 
