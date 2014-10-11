@@ -329,7 +329,9 @@ RandomExecutionTrace.prototype.addFactor = function addFactor(num)
 // Condition the trace on the value of a boolean expression
 RandomExecutionTrace.prototype.conditionOn = function conditionOn(boolexpr)
 {
-	this.conditionsSatisfied &= boolexpr
+	// Was formerely using the assignment operator (&&), but it doesn't work
+	// if boolexpr is an array or object.
+	this.conditionsSatisfied = this.conditionsSatisfied && boolexpr
 }
 
 
