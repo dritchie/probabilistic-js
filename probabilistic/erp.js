@@ -191,10 +191,12 @@ var multinomial = function multinomial(theta, isStructural, conditionedValue)
 {
 	return multinomialInst.sample(theta, isStructural, conditionedValue) + 0
 }
-
 var multinomialDraw = function multinomialDraw(items, probs, isStructural, conditionedValue)
 {
-	return items[multinomial(probs, isStructural, conditionedValue)]
+	var conditionedValueIndex = items.map(JSON.stringify).indexOf(JSON.stringify(conditionedValue))
+	conditionedValue = (conditionedValueIndex == -1) ? undefined : conditionedValueIndex
+	var result = items[multinomial(probs, isStructural, conditionedValue)]
+	return result;
 }
 
 var uniformDraw = function uniformDraw(items, isStructural, conditionedValue)
