@@ -175,7 +175,14 @@ Run computation and update this trace accordingly
 */
 RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFixed)
 {
+
+    if (gensym) {
+        gensym.__gensymcounter__ = 0;
+    }
+    
     structureIsFixed = (structureIsFixed===undefined?false:structureIsFixed)
+
+    
     
 	var origtrace = trace
 	trace = this
