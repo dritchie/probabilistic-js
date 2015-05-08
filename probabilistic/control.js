@@ -9,7 +9,7 @@ function ntimes(times, block)
 }
 
 // Invoke block until condition is true
-function until(condiiton, block)
+function until(condition, block)
 {
 	var cond = condition()
 	while (!cond)
