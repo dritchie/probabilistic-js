@@ -304,7 +304,7 @@ RandomExecutionTrace.prototype.lookup = function lookup(erp, params, isStructura
 			record.params = params
 			hasChanges = true
 		}
-		if (conditionedValue && conditionedValue != record.val)
+		if (conditionedValue != undefined && conditionedValue != record.val)
 		{
 			record.val = conditionedValue
 			record.conditioned = true
@@ -382,7 +382,7 @@ function lookupVariableValue(erp, params, isStructural, conditionedValue)
 {
 	if (!trace)
 	{
-		return conditionedValue || erp.sample_impl(params)
+		return conditionedValue === undefined ? erp.sample_impl(params) : conditionedValue
 	}
 	else
 	{
