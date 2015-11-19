@@ -216,7 +216,9 @@ RandomExecutionTrace.prototype.traceUpdate = function traceUpdate(structureIsFix
       // make sure that it was not supplanted by a new value
       // (e.g., change of support)
       if( this.vars[rec.name] == rec && !rec.active) {
-        this.oldlogprob += rec.logprob
+        if (!rec.conditioned) {
+          this.oldlogprob += rec.logprob
+        }
         delete this.vars[rec.name]
       }
     }
@@ -244,7 +246,7 @@ RandomExecutionTrace.prototype.proposeChange = function proposeChange(varname)
 	v.val = propval
 	v.logprob = v.erp.logprob(v.val, v.params)
     nextTrace.traceUpdate(!v.structural)
-	fwdPropLP += nextTrace.newlogprob
+	fwdPropLP += nextTrace.genlogprob
 	rvsPropLP += nextTrace.oldlogprob
 	return [nextTrace, fwdPropLP, rvsPropLP]
 }
