@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Probabilistic Javascript in the Browser!</title>
+    <link rel="stylesheet" href="codemirror/codemirror.css">
+    <script src="codemirror/codemirror.js"></script>
+    <script src="codemirror/matchbrackets.js"></script>
+    <script src="codemirror/continuecomment.js"></script>
+    <script src="codemirror/javascript.js"></script>
+    <script src="probabilistic.js"></script>
+    <link rel="stylesheet" href="codemirror/docs.css">
+    <style type="text/css">.CodeMirror {border-top: 1px solid black; border-bottom: 1px solid black;}</style>
+  </head>
+  <body>
+    <h1>Probabilistic Javascript in the Browser!</h1>
+
+<div><textarea id="code" name="code">
+
+var hist =
+  distrib(
+      function()
+      {
+          var a = flip()
+          var b = flip()
+          condition(a || b)
+          return (a && b)
+      },
+      traceMH,
+      1000)
+
+output(hist)
+
+</textarea></div>
+
+    <script>
+      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        lineNumbers: true,
+        matchBrackets: true,
+        continueComments: "Enter"
+      });
+      var outmirror = null
+
+      var pr = require("./probabilistic/index")
+
+      function __updateOutput(str)
+      {
+        if (!outmirror)
+        {
+          outmirror = CodeMirror(document.getElementById("output"))
+          outmirror.readonly = true
+        }
+        outmirror.setValue(str)
+        document.getElementById("clearBtn").style.display = "inline"
+      }
+
+      function __clearOutput()
+      {
+        var outelem = document.getElementById("output")
+        outelem.removeChild(outelem.childNodes[0])
+        outmirror = null
+        document.getElementById("clearBtn").style.display = "none"
+      }
+
+      function output(obj)
+      {
+        var text = JSON.stringify(obj, null, '\t')
+        __updateOutput(text)
+      }
+
+      function __runCode()
+      {
+        var codestring = editor.getValue()
+        try
+        {
+          codestring = pr.probTransform(codestring)
+          eval(codestring)
+        }
+        catch (e)
+        {
+          __updateOutput(JSON.stringify(e.message))
+        }
+      }
+    </script>
+
+    <button style="margin-top: 10px; font-size: 14pt" onclick="__runCode()">
+      Run
+    </button>
+
+    <div>
+      <br/>
+    <h3>Output:</h3>
+    <div id="output"></div>
+    <button id="clearBtn" style="margin-top: 10px; font-size: 14pt; display: none" onclick="__clearOutput()">
+      Clear
+    </button>
+    </div>
+
+  </body>
+</html>
